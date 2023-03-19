@@ -1,13 +1,13 @@
 const express = require("express");
 const Post = require("../models/post");
-const auth = require("../middleware/auth");
+const { auth } = require("../middleware/auth");
 const router = new express.Router();
 
 // Get all post with search
 // /post?page=1&limit=5&search=new post
 // /post?search=new post
 
-router.get("/post", async (req, res) => {
+router.get("/api/post", auth, async (req, res) => {
   const { page: rawPage = 1, limit: rawLimit = 10, search } = req.query;
 
   const page = parseInt(rawPage, 10);
@@ -70,7 +70,7 @@ router.post("/api/post", auth, async (req, res) => {
     // Extract the data from the request body
     const { title, subtitle, body } = req.body;
 
-    // Create a new BlogPost object with the extracted data
+    // Create a new Post object with the extracted data
     const newPost = new Post({
       title,
       subtitle,
@@ -78,7 +78,7 @@ router.post("/api/post", auth, async (req, res) => {
       author: req.user._id,
     });
 
-    // Save the new BlogPost object to the database
+    // Save the new Post object to the database
     const post = await newPost.save();
 
     // Send a success response with the saved post data

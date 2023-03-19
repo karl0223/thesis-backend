@@ -5,10 +5,13 @@ const jwt = require("jsonwebtoken");
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    firstName: {
       type: String,
       required: true,
-      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
     },
     email: {
       type: String,
@@ -43,9 +46,11 @@ const userSchema = new mongoose.Schema(
       },
     },
     posts: [
-      { type: mongoose.Schema.Types.ObjectId, 
-        ref: 'BlogPost' }
-      ],
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+      },
+    ],
     tokens: [
       {
         token: {
@@ -57,6 +62,23 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: Buffer,
     },
+    role: {
+      type: String,
+      enum: ["tutee", "tutor", "admin"],
+      default: "tutee",
+    },
+    friends: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    friendRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   {
     timestamps: true,

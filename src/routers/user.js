@@ -2,12 +2,12 @@ const express = require("express");
 const multer = require("multer");
 const sharp = require("sharp");
 const User = require("../models/user");
-const auth = require("../middleware/auth");
+const { auth } = require("../middleware/auth");
 const { sendWelcomeEmail, sendCancelationEmail } = require("../emails/account");
 const router = new express.Router();
 
 // sign up
-router.post("/users", async (req, res) => {
+router.post("/api/users", async (req, res) => {
   const user = new User(req.body);
 
   try {
@@ -21,7 +21,7 @@ router.post("/users", async (req, res) => {
 });
 
 // user login
-router.post("/users/login", async (req, res) => {
+router.post("/api/users/login", async (req, res) => {
   try {
     const user = await User.findByCredentials(
       req.body.email,
@@ -35,7 +35,7 @@ router.post("/users/login", async (req, res) => {
 });
 
 // logout user
-router.post("/users/logout", auth, async (req, res) => {
+router.post("/api/users/logout", auth, async (req, res) => {
   try {
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token;
@@ -49,7 +49,7 @@ router.post("/users/logout", auth, async (req, res) => {
 });
 
 // logout user from all devices
-router.post("/users/logoutAll", auth, async (req, res) => {
+router.post("/api/users/logoutAll", auth, async (req, res) => {
   try {
     req.user.tokens = [];
     await req.user.save();
@@ -61,12 +61,22 @@ router.post("/users/logoutAll", auth, async (req, res) => {
 });
 
 // Get user data
-router.get("/users/me", auth, async (req, res) => {
-  res.send(req.user);
+router.get("/api/users/me", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .populate("friends", "name")
+      .populate("friendRequests", "name")
+      .exec();
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send("Server error");
+  }
 });
 
 // update user profile
-router.patch("/users/me", auth, async (req, res) => {
+router.patch("/api/users/me", auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ["name", "email", "password", "age"];
   const isValidOperation = updates.every((update) =>
@@ -89,7 +99,7 @@ router.patch("/users/me", auth, async (req, res) => {
 });
 
 // Delete user
-router.delete("/users/:id", auth, async (req, res) => {
+router.delete("/api/users/:id", auth, async (req, res) => {
   try {
     await req.user.remove();
     sendCancelationEmail(req.user.email, req.user.name);
@@ -114,7 +124,7 @@ const upload = multer({
 
 // upload user avatar
 router.post(
-  "/users/me/avatar",
+  "/api/users/me/avatar",
   auth,
   upload.single("avatar"),
   async (req, res) => {
@@ -132,14 +142,14 @@ router.post(
 );
 
 // Delete user avatar
-router.delete("/users/me/avatar", auth, async (req, res) => {
+router.delete("/api/users/me/avatar", auth, async (req, res) => {
   req.user.avatar = undefined;
   await req.user.save();
   res.send();
 });
 
 // Get user avatar
-router.get("/users/:id/avatar", async (req, res) => {
+router.get("/api/users/:id/avatar", async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
