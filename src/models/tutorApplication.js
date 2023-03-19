@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const tutorApplicationSchema = new mongoose.Schema({
   userId: {
@@ -26,8 +26,8 @@ const tutorApplicationSchema = new mongoose.Schema({
 });
 
 const TutorApplication = mongoose.model(
-  "TutorApplication",
+  "tutorApplication",
   tutorApplicationSchema
 );
 
-module.exports = TutorApplication;
+export default TutorApplication;

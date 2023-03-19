@@ -1,15 +1,25 @@
-const express = require("express");
-const router = express.Router();
-const multer = require("multer");
-const User = require("../models/user");
-const { auth, authAdmin } = require("../middleware/auth");
-const TutorApplication = require("../models/tutorApplication");
-// import { getTutorApplications } from "../controllers/tutorApplicationController.js";
+import express from "express";
+const tutorApplicationRouter = express.Router();
+import multer from "multer";
+import { auth, authAdmin } from "../middleware/auth.js";
+import {
+  changeRole,
+  getApplication,
+  getTutorApplicationCount,
+  getAllTutorApplications,
+  getTutorApplicationById,
+  createTutorApplication,
+  updateTutorApplication,
+  deleteTutorApplication,
+  approveTutorApplication,
+  rejectTutorApplication,
+  getUploadedImage,
+} from "../controllers/tutorApplicationControllers.js";
 
 // To do
 // get my application
 // update the user's role if acceptedd --DONE
-// delete user's application if rejected
+// delete user's application if rejected -- DONE
 // create check application route
 
 const storage = multer.memoryStorage();
@@ -24,197 +34,78 @@ const upload = multer({
   },
 });
 
-// Get all tutor applications (admin)
-// router.get("/api/tutor-application", authAdmin, async (req, res) => {
-//   try {
-//     const tutorApplications = await TutorApplication.find().populate(
-//       "userId",
-//       "firstName"
-//     );
-//     res.json(tutorApplications);
-//   } catch (err) {
-//     console.error(err.message);
-//     res.status(500).send("Server Error");
-//   }
-// });
+// change tutor role to tutee - for testing
+tutorApplicationRouter.patch(
+  "/api/tutor-application/change-role",
+  auth,
+  changeRole
+);
+
+// total count of submitted tutor application
+tutorApplicationRouter.get(
+  "/api/tutor-application/count",
+  authAdmin,
+  getTutorApplicationCount
+);
+
+// Get user application
+tutorApplicationRouter.get("/api/tutor-application/me", auth, getApplication);
 
 // Get all tutor using controller
-// router.get("/api/tutor-application", authAdmin, getTutorApplications);
+tutorApplicationRouter.get(
+  "/api/tutor-application",
+  authAdmin,
+  getAllTutorApplications
+);
 
 // Get a single tutor application by ID (admin)
-router.get("/api/tutor-application/:id", authAdmin, async (req, res) => {
-  try {
-    const tutorApplication = await TutorApplication.findById(
-      req.params.id
-    ).populate("userId", "-password");
-    if (!tutorApplication) {
-      return res.status(404).json({ msg: "Tutor application not found" });
-    }
-    res.json(tutorApplication);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-});
+tutorApplicationRouter.get(
+  "/api/tutor-application/:id",
+  authAdmin,
+  getTutorApplicationById
+);
 
 // Accept tutor application (admin)
-router.patch(
-  "/api/tutor-applications/:id/approve",
+tutorApplicationRouter.patch(
+  "/api/tutor-application/:id/approve",
   authAdmin,
-  async (req, res) => {
-    try {
-      const tutorApplication = await TutorApplication.findById(req.params.id);
-
-      tutorApplication.status = "accepted";
-
-      //   const tutorApplication = await TutorApplication.findByIdAndUpdate(
-      //     req.params.id,
-      //     { status: "approved" },
-      //     { new: true }
-      //   );
-
-      const updateRole = await User.findByIdAndUpdate(
-        tutorApplication.userId,
-        { role: "tutor" },
-        { new: true }
-      );
-
-      await tutorApplication.save();
-      await updateRole.save();
-
-      res.json({ Application: tutorApplication, RoleUpdate: updateRole });
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("Server Error");
-    }
-  }
+  approveTutorApplication
 );
 
 // Reject tutor application (admin)
-router.patch(
-  "/api/tutor-applications/:id/reject",
+tutorApplicationRouter.delete(
+  "/api/tutor-application/:id/rejected",
   authAdmin,
-  async (req, res) => {
-    try {
-      const tutorApplication = await TutorApplication.findByIdAndUpdate(
-        req.params.id,
-        { status: "rejected" },
-        { new: true }
-      );
-
-      tutorApplication.remove();
-      res.json(tutorApplication);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("Server Error");
-    }
-  }
+  rejectTutorApplication
 );
 
 // Create a new tutor application
-router.post(
+tutorApplicationRouter.post(
   "/api/tutor-application/create",
   auth,
   upload.single("grades"),
-  async (req, res) => {
-    const { briefIntro, teachingExperience } = req.body;
-
-    try {
-      // check if the user has sent an application
-      const existingApplication = await TutorApplication.findOne({
-        userId: req.user._id,
-      });
-
-      if (existingApplication) {
-        return res.status(409).send("Application already submitted.");
-      }
-
-      const tutorApplication = new TutorApplication({
-        userId: req.user._id,
-        grades: {
-          data: req.file.buffer,
-          contentType: req.file.mimetype,
-        },
-        briefIntro,
-        teachingExperience,
-      });
-
-      await tutorApplication.save();
-
-      res.json(tutorApplication);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("Server Error");
-    }
-  }
+  createTutorApplication
 );
 
-// Update an existing tutor application by ID
-router.put(
+// Update an existing tutor application
+tutorApplicationRouter.patch(
   "/api/tutor-application/update",
   auth,
   upload.single("grades"),
-  async (req, res) => {
-    const { grades, briefIntro, teachingExperience } = req.body;
-
-    try {
-      let tutorApplication = await TutorApplication.findOne({
-        userId: req.user._id,
-      });
-
-      if (!tutorApplication) {
-        return res.status(404).json({ msg: "Tutor application not found" });
-      }
-
-      tutorApplication.grades = grades;
-      tutorApplication.briefIntro = briefIntro;
-      tutorApplication.teachingExperience = teachingExperience;
-
-      await tutorApplication.save();
-
-      res.json(tutorApplication);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("Server Error");
-    }
-  }
+  updateTutorApplication
 );
 
-// Delete an existing tutor application by ID
-router.delete("/api/tutor-application/delete", auth, async (req, res) => {
-  try {
-    const tutorApplication = await TutorApplication.findOne({
-      userId: req.user._id,
-    });
-
-    if (!tutorApplication) {
-      return res.status(404).json({ msg: "Tutor application not found" });
-    }
-
-    await tutorApplication.remove();
-
-    res.json({ msg: "Tutor application removed" });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-});
+// Delete an existing tutor application
+tutorApplicationRouter.delete(
+  "/api/tutor-application/delete",
+  auth,
+  deleteTutorApplication
+);
 
 // Route to get the uploaded image for a tutor application
-router.get("/api/tutor-application/:id/image", auth, async (req, res) => {
-  try {
-    const tutorApplication = await TutorApplication.findById(req.params.id);
+tutorApplicationRouter.get(
+  "/api/tutor-application/:id/image",
+  getUploadedImage
+);
 
-    if (!tutorApplication) {
-      return res.status(404).send("Tutor application not found.");
-    }
-
-    res.set("Content-Type", tutorApplication.grades.contentType);
-    res.send(tutorApplication.grades.data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Server Error");
-  }
-});
-
-module.exports = router;
+export default tutorApplicationRouter;

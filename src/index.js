@@ -1,4 +1,5 @@
-const app = require("./app");
+// const app = require("./app");
+import app from "./app.js";
 // const ChatRoom = require("../models/chatRoom");
 // const User = require("../models/user");
 

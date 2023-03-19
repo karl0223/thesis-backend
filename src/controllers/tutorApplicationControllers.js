@@ -1,13 +1,56 @@
-const TutorApplication = require("../models/tutorApplication");
-const User = require("../models/user");
+import TutorApplication from "../models/tutorApplication.js";
+import User from "../models/user.js";
 
-const getTutorApplications = async (req, res) => {
+const changeRole = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    user.role = "tutee";
+
+    user.save();
+
+    res.json(user);
+  } catch (err) {
+    console(err);
+    res.status(500).send("Server Error");
+  }
+};
+
+// count all tutor applications submitted
+const getTutorApplicationCount = async (req, res) => {
+  try {
+    const count = await TutorApplication.countDocuments();
+    res.json({ count });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+// under construction
+const getApplication = async (req, res) => {
+  try {
+    const tutorApplications = await TutorApplication.find({
+      userId: req.user._id,
+    }).populate("userId", "firstName");
+
+    res.json(tutorApplications);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+const getAllTutorApplications = async (req, res) => {
   try {
     const tutorApplications = await TutorApplication.find().populate(
       "userId",
       "firstName"
     );
-    res.json(tutorApplications);
+
+    const count = await TutorApplication.countDocuments();
+
+    res.json({ tutorApplications, totalCount: count });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
@@ -62,18 +105,25 @@ const createTutorApplication = async (req, res) => {
 };
 
 const updateTutorApplication = async (req, res) => {
-  const { grades, briefIntro, teachingExperience } = req.body;
+  const { briefIntro, teachingExperience } = req.body;
 
   try {
-    let tutorApplication = await TutorApplication.findOne({
+    // Find the TutorApplication document to be updated
+    const tutorApplication = await TutorApplication.findOne({
       userId: req.user._id,
     });
 
     if (!tutorApplication) {
-      return res.status(404).json({ msg: "Tutor application not found" });
+      return res.status(404).send("Tutor application not found.");
     }
 
-    tutorApplication.grades = grades;
+    // Update the grades field with the new data
+    tutorApplication.grades = {
+      data: req.file.buffer,
+      contentType: req.file.mimetype,
+    };
+
+    // Update the other fields
     tutorApplication.briefIntro = briefIntro;
     tutorApplication.teachingExperience = teachingExperience;
 
@@ -82,6 +132,21 @@ const updateTutorApplication = async (req, res) => {
     res.json(tutorApplication);
   } catch (err) {
     console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+const rejectTutorApplication = async (req, res) => {
+  try {
+    const tutorApplication = await TutorApplication.findById(
+      req.params.id,
+      { status: "rejected" },
+      { new: true }
+    );
+    tutorApplication.remove();
+    res.json(tutorApplication);
+  } catch (err) {
+    console.log(err.message);
     res.status(500).send("Server Error");
   }
 };
@@ -109,7 +174,7 @@ const approveTutorApplication = async (req, res) => {
   try {
     const tutorApplication = await TutorApplication.findById(req.params.id);
 
-    tutorApplication.status = "accepted";
+    tutorApplication.status = "approved";
 
     const updateRole = await User.findByIdAndUpdate(
       tutorApplication.userId,
@@ -137,4 +202,32 @@ const approveTutorApplication = async (req, res) => {
   }
 };
 
-module.exports = router;
+const getUploadedImage = async (req, res) => {
+  try {
+    const tutorApplication = await TutorApplication.findById(req.params.id);
+
+    if (!tutorApplication) {
+      return res.status(404).send("Tutor application not found.");
+    }
+
+    res.set("Content-Type", tutorApplication.grades.contentType);
+    res.send(tutorApplication.grades.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+};
+
+export {
+  changeRole,
+  getApplication,
+  getTutorApplicationCount,
+  getAllTutorApplications,
+  getTutorApplicationById,
+  createTutorApplication,
+  updateTutorApplication,
+  deleteTutorApplication,
+  approveTutorApplication,
+  rejectTutorApplication,
+  getUploadedImage,
+};
