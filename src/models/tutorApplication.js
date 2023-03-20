@@ -26,7 +26,7 @@ const tutorApplicationSchema = new mongoose.Schema({
 });
 
 const TutorApplication = mongoose.model(
-  "tutorApplication",
+  "TutorApplication",
   tutorApplicationSchema
 );
 

@@ -67,16 +67,41 @@ const userSchema = new mongoose.Schema(
       enum: ["tutee", "tutor", "admin"],
       default: "tutee",
     },
-    friends: [
+    tutorRatings: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        value: {
+          type: Number,
+          required: true,
+          min: 1,
+          max: 5,
+        },
+        feedback: {
+          type: String,
+        },
+        tuteeId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
       },
     ],
-    friendRequests: [
+    tuteeRatings: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        value: {
+          type: Number,
+          required: true,
+          min: 1,
+          max: 5,
+        },
+        feedback: {
+          type: String,
+          required: true,
+        },
+        tutorId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
       },
     ],
   },
@@ -84,12 +109,6 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// userSchema.virtual("tasks", {
-//   ref: "Tasks",
-//   localField: "_id",
-//   foreignField: "owner",
-// });
 
 userSchema.methods.toJSON = function () {
   const user = this;
@@ -100,6 +119,37 @@ userSchema.methods.toJSON = function () {
   delete userObject.avatar;
 
   return userObject;
+};
+
+userSchema.virtual("currentRoleRating").get(function () {
+  const role = this.role;
+  const ratings = this.ratings.filter((rating) => rating.role === role);
+  const sum = ratings.reduce((acc, curr) => acc + curr.value, 0);
+  return sum / ratings.length;
+});
+
+userSchema.virtual("tutorRating").get(function () {
+  const tutorRatings = this.ratings.filter((rating) => rating.role === "tutor");
+  if (tutorRatings.length === 0) {
+    return 0;
+  }
+  const sum = tutorRatings.reduce((acc, curr) => acc + curr.value, 0);
+  const average = sum / tutorRatings.length;
+  return average;
+});
+
+userSchema.virtual("tuteeRating").get(function () {
+  const tuteeRatings = this.ratings.filter((rating) => rating.role === "tutee");
+  if (tuteeRatings.length === 0) {
+    return 0;
+  }
+  const sum = tuteeRatings.reduce((acc, curr) => acc + curr.value, 0);
+  const average = sum / tuteeRatings.length;
+  return average;
+});
+
+userSchema.methods.addRating = function (role, value, feedback) {
+  this.ratings.push({ role, value, feedback });
 };
 
 userSchema.methods.generateAuthToken = async function () {
