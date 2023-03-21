@@ -1,5 +1,4 @@
 import express from "express";
-const tutorApplicationRouter = express.Router();
 import multer from "multer";
 import { auth, authAdmin } from "../middleware/auth.js";
 import {
@@ -15,6 +14,8 @@ import {
   rejectTutorApplication,
   getUploadedImage,
 } from "../controllers/tutorApplicationControllers.js";
+
+const tutorApplicationRouter = express.Router();
 
 // To do
 // get my application

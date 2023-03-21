@@ -124,6 +124,9 @@ userSchema.methods.toJSON = function () {
 userSchema.virtual("currentRoleRating").get(function () {
   const role = this.role;
   const ratings = this.ratings.filter((rating) => rating.role === role);
+  if (ratings.length === 0) {
+    return 0;
+  }
   const sum = ratings.reduce((acc, curr) => acc + curr.value, 0);
   return sum / ratings.length;
 });
@@ -148,9 +151,9 @@ userSchema.virtual("tuteeRating").get(function () {
   return average;
 });
 
-userSchema.methods.addRating = function (role, value, feedback) {
-  this.ratings.push({ role, value, feedback });
-};
+// userSchema.methods.addRating = function (role, value, feedback) {
+//   this.ratings.push({ role, value, feedback });
+// };
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
