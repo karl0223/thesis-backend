@@ -1,131 +1,83 @@
-// const app = require("./app");
 import app from "./app.js";
-// const ChatRoom = require("../models/chatRoom");
-// const User = require("../models/user");
+import http from "http";
+import { Server } from "socket.io";
+import ChatRoom from "./models/chatRoom.js";
 
+const server = http.createServer(app);
+const io = new Server(server);
 const port = process.env.PORT;
 
-// // Import Socket.IO and create a new instance
-// const socketio = require("socket.io");
-// const http = require("http");
-// const server = http.createServer(app);
-// const io = socketio(server);
+io.on("connection", (socket) => {
+  console.log("Client connected");
 
-// // Define Socket.IO event listeners
-// io.on("connection", (socket) => {
-//   console.log(`Socket connected: ${socket.id}`);
+  socket.on("join-room", async ({ roomId, userId }) => {
+    try {
+      const participant = await ChatRoom.isParticipant(roomId, userId);
+      if (participant && participant.status === "accepted") {
+        // If user is already a participant and their status is "accepted", let them join the room
+        socket.join(roomId);
+      } else {
+        // If user is not already a participant or their status is "pending", add them to the list of pending participants
+        await ChatRoom.addParticipant(roomId, userId);
+        // Emit a "join-pending" event to the user to indicate that their request is pending
+        socket.emit("join-pending", { roomId, userId });
+        // Emit a "new-pending-participant" event to the chat room owner to notify them of the new pending participant
+        const owner = await ChatRoom.getOwner(roomId);
+        if (owner) {
+          io.to(owner.userId).emit("new-pending-participant", {
+            roomId,
+            userId,
+          });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-//   // Join a chatroom
-//   socket.on("joinChatroom", async (data) => {
-//     const { chatroomId } = data;
-//     socket.join(chatroomId);
-//     console.log(`Socket ${socket.id} joined chatroom ${chatroomId}`);
-//   });
+  socket.on("accept-request", async ({ roomId, userId }) => {
+    try {
+      await ChatRoom.updateParticipantStatus(roomId, userId, "accepted");
+      // Emit a "join-accepted" event to the user to indicate that their request has been accepted
+      socket.emit("join-accepted", { roomId, userId });
+      // Emit a "user-joined" event to all users in the chat room to notify them of the new user
+      io.to(roomId).emit("user-joined", { roomId, userId });
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-//   // Leave a chatroom
-//   socket.on("leaveChatroom", async (data) => {
-//     const { chatroomId } = data;
-//     socket.leave(chatroomId);
-//     console.log(`Socket ${socket.id} left chatroom ${chatroomId}`);
-//   });
+  socket.on("reject-request", async ({ roomId, userId }) => {
+    try {
+      await ChatRoom.updateParticipantStatus(roomId, userId, "rejected");
+      // Emit a "join-rejected" event to the user to indicate that their request has been rejected
+      socket.emit("join-rejected", { roomId, userId });
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-//   // Create a message in a chatroom
-//   socket.on("createMessage", async (data) => {
-//     const { chatroomId, senderId, message } = data;
-//     const chatroom = await ChatRoom.findById(chatroomId);
-//     if (!chatroom) {
-//       console.error(`Chatroom ${chatroomId} not found`);
-//       return;
-//     }
-//     const log = {
-//       senderId,
-//       message,
-//       timestamp: Date.now(),
-//     };
-//     chatroom.logs.push(log);
-//     await chatroom.save();
-//     io.to(chatroomId).emit("messageCreated", log);
-//   });
+  socket.on("new-message", async ({ roomId, userId, message }) => {
+    try {
+      const chatroom = await ChatRoom.findByIdAndUpdate(
+        roomId,
+        { $push: { logs: { senderId: userId, message } } },
+        { new: true }
+      );
+      io.to(roomId).emit("message", {
+        roomId,
+        senderId: userId,
+        message,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-//   // Disconnect the socket
-//   socket.on("disconnect", () => {
-//     console.log(`Socket disconnected: ${socket.id}`);
-//   });
-// });
-
-// // Define the routes
-// router.get("/chatroom/:chatroomId", async (req, res) => {
-//   try {
-//     const chatroom = await ChatRoom.findById(req.params.chatroomId).populate(
-//       "participants",
-//       "-password"
-//     );
-//     if (!chatroom) {
-//       return res.status(404).json({ error: "Chatroom not found" });
-//     }
-//     res.json(chatroom);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
-
-// router.post("/chatroom", async (req, res) => {
-//   const { participants } = req.body;
-//   if (!participants || participants.length < 2) {
-//     return res
-//       .status(400)
-//       .json({ error: "Chatroom must have at least 2 participants" });
-//   }
-//   try {
-//     const chatroom = new ChatRoom({ participants });
-//     await chatroom.save();
-//     res.json(chatroom);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
-
-// router.get("/user/:userId", async (req, res) => {
-//   try {
-//     const user = await User.findById(req.params.userId);
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-//     res.json(user);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
-
-// router.post("/user/:userId/friends", async (req, res) => {
-//   try {
-//     const user = await User.findById(req.params.userId);
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-//     const { friendId } = req.body;
-//     const friend = await User.findById(friendId);
-//     if (!friend) {
-//       return res.status(404).json({ error: "Friend not found" });
-//     }
-//     if (user.friends.includes(friendId)) {
-//       return res
-//         .status(400)
-//         .json({ error: "You are already friends with this user" });
-//     }
-//     user.friends.push(friendId);
-//     await user.save();
-//     res.json(user);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
-
-// module.exports = { router, server };
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+  });
+});
 
 app.listen(port, () => {
   console.log("Server us up on port " + port);

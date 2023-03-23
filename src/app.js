@@ -14,6 +14,7 @@ import userRouter from "./routers/user.js";
 import tutorApplicationRouter from "./routers/tutorApplication.js";
 import ratingsRouter from "./routers/ratings.js";
 import reportRouter from "./routers/report.js";
+import analyticsRouter from "./routers/analytics.js";
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use(userRouter);
 app.use(tutorApplicationRouter);
 app.use(ratingsRouter);
 app.use(reportRouter);
+app.use(analyticsRouter);
 
 export default app;

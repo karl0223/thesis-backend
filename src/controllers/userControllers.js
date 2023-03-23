@@ -53,8 +53,8 @@ const logoutAll = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .populate("friends", "name")
-      .populate("friendRequests", "name")
+      .populate("tutorRatings", "value")
+      .populate("tuteeRatings", "value")
       .exec();
 
     return res.status(200).json(user);
