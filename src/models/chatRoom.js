@@ -1,4 +1,21 @@
 import mongoose from "mongoose";
+import Message from "../models/messages.js";
+
+const participantSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User",
+    },
+    status: {
+      type: String,
+      enum: ["accepted", "pending", "owner"],
+      default: "pending",
+    },
+  },
+  { _id: false }
+);
 
 const chatRoomSchema = new mongoose.Schema({
   owner: {
@@ -6,38 +23,80 @@ const chatRoomSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  participants: [
+  participants: [participantSchema],
+  messages: [
     {
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-      status: {
-        type: String,
-        enum: ["requested", "accepted", "rejected"],
-        default: "requested",
-      },
-    },
-  ],
-  logs: [
-    {
-      senderId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-      message: {
-        type: String,
-        required: true,
-      },
-      timestamp: {
-        type: Date,
-        default: Date.now,
-      },
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
     },
   ],
 });
+
+chatRoomSchema.methods.getMessages = async function () {
+  const messages = await Message.find({ roomId: this._id });
+  return messages;
+};
+
+chatRoomSchema.statics.isParticipant = async function (roomId, userId) {
+  const chatRoom = await this.findOne({ _id: roomId });
+  if (!chatRoom) {
+    return false;
+  }
+  return chatRoom.participants.find(
+    (p) => p.userId.toString() === userId.toString()
+  );
+};
+
+chatRoomSchema.statics.addParticipant = async function (
+  roomId,
+  userId,
+  status
+) {
+  const chatRoom = await this.findOne({ _id: roomId });
+  if (!chatRoom) {
+    throw new Error("Chat room not found");
+  }
+  chatRoom.participants.push({ userId, status });
+  await chatRoom.save();
+};
+
+chatRoomSchema.statics.addPendingParticipant = async function (roomId, userId) {
+  await this.addParticipant(roomId, userId, "pending");
+};
+
+chatRoomSchema.statics.updateParticipantStatus = async function (
+  roomId,
+  userId,
+  newStatus
+) {
+  const chatRoom = await this.findOne({ _id: roomId });
+  if (!chatRoom) {
+    throw new Error("Chat room not found");
+  }
+  const participant = chatRoom.participants.find(
+    (p) => p.userId.toString() === userId.toString()
+  );
+  if (!participant) {
+    throw new Error("User not a participant in the chat room");
+  }
+  participant.status = newStatus;
+  await chatRoom.save();
+};
+
+chatRoomSchema.statics.removeParticipant = async function (roomId, userId) {
+  const chatRoom = await this.findOne({ _id: roomId });
+  if (!chatRoom) {
+    throw new Error("Chat room not found");
+  }
+  const index = chatRoom.participants.findIndex(
+    (p) => p.userId.toString() === userId.toString()
+  );
+  if (index === -1) {
+    throw new Error("User not a participant in the chat room");
+  }
+  chatRoom.participants.splice(index, 1);
+  await chatRoom.save();
+};
 
 chatRoomSchema.statics.getOwner = async function (roomId) {
   const chatroom = await this.findById(roomId).populate("owner");
@@ -45,76 +104,6 @@ chatRoomSchema.statics.getOwner = async function (roomId) {
     throw new Error("Chat room not found");
   }
   return chatroom.owner;
-};
-
-chatRoomSchema.statics.isParticipant = async function (chatroomId, userId) {
-  const count = await this.countDocuments({
-    _id: chatroomId,
-    "participants.user": userId,
-    "participants.status": "accepted",
-  });
-  return count > 0;
-};
-
-// chatRoomSchema.statics.addPendingParticipant = async function (
-//   chatroomId,
-//   userId
-// ) {
-//   const chatroom = await this.findById(chatroomId);
-//   if (!chatroom) {
-//     throw new Error("Chat room not found");
-//   }
-//   const participant = chatroom.participants.find((p) => p.user.equals(userId));
-//   if (participant) {
-//     if (participant.status !== "requested") {
-//       participant.status = "requested";
-//       await chatroom.save();
-//     }
-//   } else {
-//     chatroom.participants.push({ user: userId });
-//     await chatroom.save();
-//   }
-//   return chatroom;
-// };
-
-chatRoomSchema.statics.addParticipant = async function (chatroomId, userId) {
-  const chatroom = await this.findByIdAndUpdate(
-    chatroomId,
-    {
-      $addToSet: { participants: userId },
-    },
-    { new: true }
-  );
-  return chatroom;
-};
-
-chatRoomSchema.statics.removeParticipant = async function (chatroomId, userId) {
-  const chatroom = await this.findByIdAndUpdate(
-    chatroomId,
-    {
-      $pull: { participants: { user: userId } },
-    },
-    { new: true }
-  );
-  return chatroom;
-};
-
-chatRoomSchema.statics.updateParticipantStatus = async function (
-  chatroomId,
-  userId,
-  newStatus
-) {
-  const chatroom = await this.findOneAndUpdate(
-    {
-      _id: chatroomId,
-      "participants.user": userId,
-    },
-    {
-      $set: { "participants.$.status": newStatus },
-    },
-    { new: true }
-  );
-  return chatroom;
 };
 
 const ChatRoom = mongoose.model("ChatRoom", chatRoomSchema);
