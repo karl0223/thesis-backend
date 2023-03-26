@@ -18,6 +18,16 @@ import analyticsRouter from "./routers/analytics.js";
 
 const app = express();
 
+import http from "http";
+import { Server } from "socket.io";
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+import socketController from "./controllers/socketControllers.js";
+socketController(io);
+
+app.set("socketio", io);
 app.use(express.json());
 app.use(userRouter);
 // app.use(postRouter);
