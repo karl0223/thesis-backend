@@ -38,4 +38,4 @@ app.use(reportRouter);
 app.use(analyticsRouter);
 app.use(homeRouter);
 
-export default app;
+export default server;
