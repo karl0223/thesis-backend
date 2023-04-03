@@ -16,6 +16,7 @@ import ratingsRouter from "./routers/ratings.js";
 import reportRouter from "./routers/report.js";
 import analyticsRouter from "./routers/analytics.js";
 import homeRouter from "./routers/home.js";
+import { socketAuth } from "./middleware/auth.js";
 
 const app = express();
 
@@ -26,6 +27,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 import socketController from "./controllers/socketControllers.js";
+io.use(socketAuth);
 socketController(io);
 
 app.set("socketio", io);

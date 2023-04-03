@@ -2,16 +2,16 @@
 import ChatRoom from "../models/chatRoom.js";
 
 // Create a new chat room and add the owner as a participant
-const createChatRoom = async (ownerId) => {
-  const chatRoom = await ChatRoom.create({ owner: ownerId });
-  await chatRoom.addParticipant(ownerId, "owner");
+const createChatRoom = async (userId) => {
+  const chatRoom = await ChatRoom.create({ owner: userId });
+  await chatRoom.addParticipant(userId, "owner");
   return chatRoom;
 };
 
 // Invite a user to a chat room
-const inviteUser = async (roomId, userId) => {
-  //var io = req.app.get("socketio");
-  const participant = await ChatRoom.isParticipant(roomId, userId);
+const inviteUser = async (roomId, userId, inviteeId) => {
+  const io = req.app.get("socketio");
+  const participant = await ChatRoom.isParticipant(roomId, inviteeId);
   if (participant) {
     if (participant.status === "pending") {
       // If the user is already invited, do nothing
@@ -22,20 +22,23 @@ const inviteUser = async (roomId, userId) => {
     }
   } else {
     // Add the user as a pending participant
-    await ChatRoom.addPendingParticipant(roomId, userId);
+    await ChatRoom.addPendingParticipant(roomId, inviteeId);
     // Emit an "invitation" event to the user
-    io.to(userId).emit("invitation", { roomId });
+    io.to(inviteeId).emit("invitation", { roomId });
     // Emit a "new-pending-participant" event to the chat room owner to notify them of the new pending participant
     const owner = await ChatRoom.getOwner(roomId);
     if (owner) {
-      io.to(owner._id).emit("new-pending-participant", { roomId, userId });
+      io.to(owner._id).emit("new-pending-participant", {
+        roomId,
+        userId: inviteeId,
+      });
     }
   }
 };
 
 // Accept a chat room invitation
 const acceptInvitation = async (roomId, userId) => {
-  //var io = req.app.get("socketio");
+  const io = req.app.get("socketio");
   await ChatRoom.updateParticipantStatus(roomId, userId, "accepted");
   // Emit a "join-accepted" event to the user to indicate that their request has been accepted
   io.to(userId).emit("join-accepted", { roomId });
@@ -45,7 +48,7 @@ const acceptInvitation = async (roomId, userId) => {
 
 // Reject a chat room invitation
 const rejectInvitation = async (roomId, userId) => {
-  //var io = req.app.get("socketio");
+  const io = req.app.get("socketio");
   await ChatRoom.removeParticipant(roomId, userId);
   // Emit a "join-rejected" event to the user to indicate that their request has been rejected
   io.to(userId).emit("join-rejected", { roomId });
@@ -55,7 +58,7 @@ const rejectInvitation = async (roomId, userId) => {
 
 // Leave a chat room
 const leaveChatRoom = async (roomId, userId) => {
-  //var io = req.app.get("socketio");
+  const io = req.app.get("socketio");
   await ChatRoom.removeParticipant(roomId, userId);
   // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
   io.to(roomId).emit("user-left", { roomId, userId });
@@ -63,7 +66,7 @@ const leaveChatRoom = async (roomId, userId) => {
 
 // Promote a participant to owner
 const promoteParticipant = async (roomId, userId) => {
-  //var io = req.app.get("socketio");
+  const io = req.app.get("socketio");
   await ChatRoom.updateParticipantStatus(roomId, userId, "owner");
   // Emit an "owner-promoted" event to the user to indicate that they have been promoted
   io.to(userId).emit("owner-promoted", { roomId });
@@ -71,7 +74,7 @@ const promoteParticipant = async (roomId, userId) => {
 
 // Demote an owner to participant
 const demoteOwner = async (roomId, userId) => {
-  //var io = req.app.get("socketio");
+  const io = req.app.get("socketio");
   await ChatRoom.updateParticipantStatus(roomId, userId, "accepted");
   // Emit an "owner-demoted" event to the user to indicate that they have been demoted
   io.to(userId).emit("owner-demoted", { roomId });
@@ -79,7 +82,7 @@ const demoteOwner = async (roomId, userId) => {
 
 // Kick a participant from the chat room
 const kickParticipant = async (roomId, userId) => {
-  //var io = req.app.get("socketio");
+  const io = req.app.get("socketio");
   await ChatRoom.removeParticipant(roomId, userId);
   // Emit a "user-kicked" event to the user to indicate that they have been kicked
   io.to(userId).emit("user-kicked", { roomId });

@@ -30,10 +30,54 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
+// const socketAuth = async (socket, next) => {
+//   try {
+//     const token = socket.request.headers.authorization.replace("Bearer ", "");
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     const user = await User.findOne({
+//       _id: decoded._id,
+//       "tokens.token": token,
+//     });
+
+//     if (!user) {
+//       throw new Error();
+//     }
+
+//     socket.request.user = user;
+//     socket.request.token = token;
+//     next();
+//   } catch (e) {
+//     next(new Error("Please authenticate."));
+//   }
+// };
+
+const socketAuth = async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findOne({
+      _id: decoded._id,
+      "tokens.token": token,
+    });
+
+    if (!user) {
+      throw new Error();
+    }
+
+    socket.request.user = user;
+    socket.request.token = token;
+
+    console.log(`Socket ${socket.id} authenticated`);
+    next();
+  } catch (e) {
+    next(new Error("Please authenticate."));
+  }
+};
+
 const authAdmin = (req, res, next) => {
   auth(req, res, () => {
     isAdmin(req, res, next);
   });
 };
 
-export { auth, isAdmin, authAdmin };
+export { auth, isAdmin, authAdmin, socketAuth };
