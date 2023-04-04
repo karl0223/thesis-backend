@@ -107,6 +107,9 @@ const userSchema = new mongoose.Schema(
     socketId: {
       type: String,
     },
+    timeAndDateAvailability: {
+      type: String,
+    },
   },
   {
     timestamps: true,

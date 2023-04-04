@@ -30,6 +30,11 @@ const chatRoomSchema = new mongoose.Schema({
       ref: "Message",
     },
   ],
+  status: {
+    type: String,
+    enum: ["public", "private"],
+    default: "public",
+  },
 });
 
 chatRoomSchema.methods.getMessages = async function () {

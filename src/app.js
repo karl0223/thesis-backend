@@ -17,6 +17,7 @@ import reportRouter from "./routers/report.js";
 import analyticsRouter from "./routers/analytics.js";
 import homeRouter from "./routers/home.js";
 import { socketAuth } from "./middleware/auth.js";
+import studyRoomRouter from "./routers/studyRoom.js";
 
 const app = express();
 
@@ -39,5 +40,6 @@ app.use(ratingsRouter);
 app.use(reportRouter);
 app.use(analyticsRouter);
 app.use(homeRouter);
+app.use(studyRoomRouter);
 
 export default server;
