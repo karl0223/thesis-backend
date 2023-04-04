@@ -53,7 +53,7 @@ const isAdmin = (req, res, next) => {
 
 const socketAuth = async (socket, next) => {
   try {
-    const token = socket.handshake.auth.token;
+    const token = socket.handshake.query.authToken;
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({
       _id: decoded._id,
