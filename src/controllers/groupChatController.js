@@ -2,10 +2,29 @@
 import ChatRoom from "../models/chatRoom.js";
 
 // Create a new chat room and add the owner as a participant
-const createChatRoom = async (userId) => {
-  const chatRoom = await ChatRoom.create({ owner: userId });
-  await chatRoom.addParticipant(userId, "owner");
-  return chatRoom;
+const createChatRoom = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== "tutor") {
+      throw new Error("Only tutors can create study rooms");
+    }
+
+    const { name, status } = req.body;
+    if (!name || !status) {
+      throw new Error("Name and status are required");
+    }
+
+    const chatRoom = await ChatRoom.create({
+      owner: req.user._id,
+      name,
+      status,
+    });
+
+    await ChatRoom.addParticipant(chatRoom._id, req.user._id, "owner");
+    res.send(chatRoom);
+  } catch (err) {
+    console.log(err);
+    res.status(403).send("Access denied");
+  }
 };
 
 // Invite a user to a chat room
