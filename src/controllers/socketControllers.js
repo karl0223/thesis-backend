@@ -1,5 +1,4 @@
 import {
-  createChatRoom,
   inviteUser,
   acceptInvitation,
   rejectInvitation,
@@ -9,65 +8,29 @@ import {
   kickParticipant,
 } from "./groupChatController.js";
 
-import User from "../models/user.js";
-import { socketAuth } from "../middleware/auth.js";
+import { createChatRoom } from "./studyRoomController.js";
+
 import ChatRoom from "../models/chatRoom.js";
 import Message from "../models/messages.js"; // added import
-
-async function updateUserSocket(userId, socketId) {
-  try {
-    await User.updateOne({ _id: userId }, { socketId }, { upsert: true });
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-async function deleteUserSocket(userId) {
-  try {
-    await User.deleteOne({ userId });
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-async function getUserSocket(userId) {
-  try {
-    const user = await User.findOne({ userId });
-    return user ? user.socketId : null;
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-}
+import {
+  updateUserSocket,
+  deleteUserSocket,
+  getUserSocket,
+} from "../utils/socketUtils.js";
 
 function socketController(io) {
-  // io.use(socketAuth);
-
-  // let userId;
-
   io.on("connection", async (socket) => {
-    // socketAuth(socket, async () => {
-    //   console.log(`User socket id: ${socket.id}`);
-    //   // Your authenticated socket code here
-    // });
+    let userId;
 
-    // console.log(socket.id);
-
-    // if (socket.request.user) {
-    //   console.log("User is authenticated. User id:", socket.request.user.id);
-    //   userId = socket.request.user._id;
-    // } else {
-    //   console.log("User is not authenticated.");
-    // }
-
-    console.log(`Socket ${socket.id} connected`);
-
-    const userId = socket.request.user._id;
+    if (socket.request.user) {
+      console.log("User is authenticated. User id:", socket.request.user.id);
+      userId = socket.request.user._id;
+    } else {
+      console.log("User is not authenticated.");
+    }
 
     await updateUserSocket(userId, socket.id);
-
-    console.log(`Socket ${socket.id} connected`);
-    console.log(`User ${userId} connected`);
+    console.log("User is authenticated. User id:", socket.request.user.id);
 
     socket.on("join-room", async ({ roomId }) => {
       try {
@@ -100,6 +63,12 @@ function socketController(io) {
       }
     });
 
+    // new pending participant
+    socket.on("new-pending-participant", ({ roomId, userId }) => {
+      // Handle the new-pending-participant event
+      console.log(`New pending participant in room ${roomId}: ${userId}`);
+    });
+
     // Listen for send-message events
     socket.on("send-message", async ({ roomId, userId, message }) => {
       // Save the message to the database
@@ -108,23 +77,20 @@ function socketController(io) {
       io.to(roomId).emit("message-sent", { roomId, userId, message });
     });
 
-    // Listen for "create-room" events
-    socket.on("create-room", async () => {
+    // Listen for create-chat-room events
+    socket.on("create-chat-room", async ({ name, participants }) => {
       try {
-        // Create a new chat room and add the owner as a participant
-        const chatRoom = await createChatRoom(userId);
-        // Emit a "chat-room-created" event to the user to notify them of the new chat room
+        const chatRoom = await createChatRoom(userId, name, participants);
         socket.emit("chat-room-created", { chatRoom });
-      } catch (error) {
-        // Emit an "error" event to the user if there was an error creating the chat room
-        socket.emit("error", { message: error.message });
+      } catch (err) {
+        console.error(err);
       }
     });
 
     // Listen for "invite-user" events
     socket.on("invite-user", async ({ roomId, inviteeId }) => {
       try {
-        await inviteUser(roomId, userId, inviteeId);
+        await inviteUser(roomId, inviteeId);
       } catch (error) {
         // Emit an "error" event to the user if there was an error inviting them to the chat room
         io.to(userId).emit("error", { message: error.message });

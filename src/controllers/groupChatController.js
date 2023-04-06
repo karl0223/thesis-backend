@@ -1,35 +1,8 @@
 // Import the required dependencies
 import ChatRoom from "../models/chatRoom.js";
 
-// Create a new chat room and add the owner as a participant
-const createChatRoom = async (req, res) => {
-  try {
-    if (!req.user || req.user.role !== "tutor") {
-      throw new Error("Only tutors can create study rooms");
-    }
-
-    const { name, status } = req.body;
-    if (!name || !status) {
-      throw new Error("Name and status are required");
-    }
-
-    const chatRoom = await ChatRoom.create({
-      owner: req.user._id,
-      name,
-      status,
-    });
-
-    await ChatRoom.addParticipant(chatRoom._id, req.user._id, "owner");
-    res.send(chatRoom);
-  } catch (err) {
-    console.log(err);
-    res.status(403).send("Access denied");
-  }
-};
-
 // Invite a user to a chat room
-const inviteUser = async (roomId, userId, inviteeId) => {
-  const io = req.app.get("socketio");
+const inviteUser = async (io, roomId, inviteeId) => {
   const participant = await ChatRoom.isParticipant(roomId, inviteeId);
   if (participant) {
     if (participant.status === "pending") {
@@ -56,13 +29,16 @@ const inviteUser = async (roomId, userId, inviteeId) => {
 };
 
 // Accept a chat room invitation
-const acceptInvitation = async (roomId, userId) => {
-  const io = req.app.get("socketio");
-  await ChatRoom.updateParticipantStatus(roomId, userId, "accepted");
-  // Emit a "join-accepted" event to the user to indicate that their request has been accepted
-  io.to(userId).emit("join-accepted", { roomId });
-  // Emit a "user-joined" event to all users in the chat room to notify them of the new user
-  io.to(roomId).emit("user-joined", { roomId, userId });
+const acceptInvitation = async (io, roomId, userId) => {
+  try {
+    await ChatRoom.updateParticipantStatus(roomId, userId, "accepted");
+    // Emit a "join-accepted" event to the user to indicate that their request has been accepted
+    io.to(userId).emit("join-accepted", { roomId });
+    // Emit a "user-joined" event to all users in the chat room to notify them of the new user
+    io.to(roomId).emit("user-joined", { roomId, userId });
+  } catch (error) {
+    throw new Error("Failed to accept invitation");
+  }
 };
 
 // Reject a chat room invitation
@@ -110,7 +86,6 @@ const kickParticipant = async (roomId, userId) => {
 };
 
 export {
-  createChatRoom,
   inviteUser,
   acceptInvitation,
   rejectInvitation,
