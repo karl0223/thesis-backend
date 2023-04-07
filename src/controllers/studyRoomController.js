@@ -240,10 +240,45 @@ const acceptInvite = async (req, res) => {
   }
 };
 
+const getUserChatRooms = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all the chat rooms the user has joined or owns
+    const userRooms = await ChatRoom.getUserRooms(userId);
+
+    // Filter out the chat rooms where the user's status is "pending"
+    const acceptedRooms = userRooms.filter((room) =>
+      room.participants.some(
+        (p) => p.userId == req.user._id && p.status === "accepted"
+      )
+    );
+
+    // Fetch the messages for each chat room
+    const roomsWithMessages = await Promise.all(
+      acceptedRooms.map(async (room) => {
+        const messages = await Message.find({ roomId: room._id })
+          .sort("-createdAt")
+          .limit(50);
+        return {
+          ...room.toObject(),
+          messages: messages.reverse(),
+        };
+      })
+    );
+
+    res.status(200).json(roomsWithMessages);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+};
+
 export {
   joinRoom,
   createChatRoom,
   allRequestedRooms,
+  getUserChatRooms,
   getPublicRooms,
   getPrivateRooms,
   getMessages,

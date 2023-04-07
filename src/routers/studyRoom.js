@@ -4,6 +4,7 @@ import {
   joinRoom,
   createChatRoom,
   allRequestedRooms,
+  getUserChatRooms,
   getPublicRooms,
   getPrivateRooms,
   getMessages,
@@ -28,6 +29,8 @@ studyRoomRouter.get(
   auth,
   getParticipants
 );
+
+studyRoomRouter.get("/api/studyroom/user-rooms", auth, getUserChatRooms);
 
 studyRoomRouter.post("/api/studyroom/join/:roomId", auth, joinRoom);
 
