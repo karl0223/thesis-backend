@@ -3,12 +3,13 @@ import { auth } from "../middleware/auth.js";
 import {
   joinRoom,
   createChatRoom,
-  allRequestedRooms,
+  getPendingChatRoom,
   getUserChatRooms,
   getPublicRooms,
   getPrivateRooms,
   getMessages,
   getParticipants,
+  pendingParticipants,
   sendMessage,
   sendInvite,
   acceptInvite,
@@ -16,13 +17,13 @@ import {
 
 const studyRoomRouter = express.Router();
 
-studyRoomRouter.get("/api/studyroom", auth, allRequestedRooms);
+studyRoomRouter.get("/api/studyroom/pending", auth, getPendingChatRoom);
 
 studyRoomRouter.get("/api/studyroom/public", auth, getPublicRooms);
 
 studyRoomRouter.get("/api/studyroom/private", auth, getPrivateRooms);
 
-studyRoomRouter.get("/api/studyroom/:roomId", auth, getMessages);
+studyRoomRouter.get("/api/studyroom/messages/:roomId", auth, getMessages);
 
 studyRoomRouter.get(
   "/api/studyroom/:roomId/participants",
@@ -30,7 +31,13 @@ studyRoomRouter.get(
   getParticipants
 );
 
-studyRoomRouter.get("/api/studyroom/user-rooms", auth, getUserChatRooms);
+studyRoomRouter.get(
+  "/api/studyroom/:roomId/pending-participants",
+  auth,
+  pendingParticipants
+);
+
+studyRoomRouter.get("/api/studyroom/user-room", auth, getUserChatRooms);
 
 studyRoomRouter.post("/api/studyroom/join/:roomId", auth, joinRoom);
 

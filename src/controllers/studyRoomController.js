@@ -73,20 +73,18 @@ const joinRoom = async (req, res) => {
   }
 };
 
-const allRequestedRooms = async (req, res) => {
+const getPendingChatRoom = async (req, res) => {
   try {
-    const userRooms = await ChatRoom.getUserRooms(req.user._id);
-    const acceptedRooms = userRooms.filter((room) =>
-      room.participants.some(
-        (p) => p.userId == req.user._id && p.status === "accepted"
-      )
-    );
-    const pendingRooms = userRooms.filter((room) =>
-      room.participants.some(
-        (p) => p.userId == req.user._id && p.status === "pending"
-      )
-    );
-    res.status(200).json({ acceptedRooms, pendingRooms });
+    const chatRoom = await ChatRoom.findOne({
+      "participants.userId": req.user._id,
+      "participants.status": "pending",
+    }).populate("participants.userId");
+
+    if (!chatRoom) {
+      return res.status(404).json({ msg: "No pending chat room found" });
+    }
+
+    res.status(200).json(chatRoom);
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
@@ -161,7 +159,7 @@ const sendMessage = async (req, res) => {
     const { roomId, message } = req.body;
 
     // Save the message to the database
-    await Message.create({ roomId, userId, message });
+    await Message.create({ roomId, userId: req.user._id, message });
 
     // Emit a "message-sent" event to all users in the chat room to notify them of the new message
     const io = req.app.get("socketio");
@@ -244,30 +242,54 @@ const getUserChatRooms = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Get all the chat rooms the user has joined or owns
-    const userRooms = await ChatRoom.getUserRooms(userId);
+    // Find the chat room the user has joined or owns
+    const chatRoom = await ChatRoom.findOne({
+      $or: [
+        { owner: userId },
+        {
+          participants: { $elemMatch: { userId: userId, status: "accepted" } },
+        },
+      ],
+    });
 
-    // Filter out the chat rooms where the user's status is "pending"
-    const acceptedRooms = userRooms.filter((room) =>
-      room.participants.some(
-        (p) => p.userId == req.user._id && p.status === "accepted"
-      )
-    );
+    if (!chatRoom) {
+      res.status(404).send("Chat room not found");
+      return;
+    }
 
-    // Fetch the messages for each chat room
-    const roomsWithMessages = await Promise.all(
-      acceptedRooms.map(async (room) => {
-        const messages = await Message.find({ roomId: room._id })
-          .sort("-createdAt")
-          .limit(50);
-        return {
-          ...room.toObject(),
-          messages: messages.reverse(),
-        };
-      })
-    );
+    // Fetch the messages for the chat room
+    const messages = await Message.find({ roomId: chatRoom._id })
+      .sort("-createdAt")
+      .limit(50);
 
-    res.status(200).json(roomsWithMessages);
+    res.status(200).json({
+      ...chatRoom.toObject(),
+      messages: messages.reverse(),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+};
+
+const pendingParticipants = async (req, res) => {
+  const { roomId } = req.params;
+
+  try {
+    const chatRoom = await ChatRoom.findById(roomId).populate({
+      path: "participants",
+      match: { status: "pending" },
+      populate: {
+        path: "userId",
+        select: "firstName lastName",
+      },
+    });
+
+    if (!chatRoom) {
+      res.status(404).send();
+    }
+
+    res.send(chatRoom);
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
@@ -277,13 +299,14 @@ const getUserChatRooms = async (req, res) => {
 export {
   joinRoom,
   createChatRoom,
-  allRequestedRooms,
+  getPendingChatRoom,
   getUserChatRooms,
   getPublicRooms,
   getPrivateRooms,
   getMessages,
   sendMessage,
   getParticipants,
+  pendingParticipants,
   sendInvite,
   acceptInvite,
 };

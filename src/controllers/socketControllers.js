@@ -173,4 +173,3 @@ function socketController(io) {
 }
 
 export default socketController;
-// module.exports = { socketController };
