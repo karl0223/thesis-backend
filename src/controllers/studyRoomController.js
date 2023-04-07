@@ -1,5 +1,6 @@
 import ChatRoom from "../models/chatRoom.js";
 import Message from "../models/messages.js";
+import { getUserSocket } from "../utils/socketUtils.js";
 import { inviteUser, acceptInvitation } from "./groupChatController.js";
 
 // Create a new chat room and add the owner as a participant
@@ -30,7 +31,7 @@ const createChatRoom = async (req, res) => {
 
 const joinRoom = async (req, res) => {
   const { roomId } = req.params;
-  const { userId } = req.user._id;
+  const userId = req.user._id;
 
   try {
     const participant = await ChatRoom.isParticipant(roomId, userId);
@@ -51,8 +52,13 @@ const joinRoom = async (req, res) => {
         }
       }
       res.status(200).send();
+    } else if (participant && participant.status === "pending") {
+      // If user has already requested to join the room, return an error message
+      res
+        .status(409)
+        .json({ error: "User has already requested to join this room." });
     } else {
-      // If user is not already a participant or their status is "pending", add them to the list of pending participants
+      // If user is not already a participant, add them to the list of pending participants
       await ChatRoom.addParticipant(roomId, userId, "pending");
       // Emit a "new-pending-participant" event to the chat room owner to notify them of the new pending participant
       const owner = await ChatRoom.getOwner(roomId);

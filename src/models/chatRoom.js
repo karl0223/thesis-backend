@@ -89,13 +89,24 @@ chatRoomSchema.methods.cancelParticipant = async function (userId) {
 };
 
 chatRoomSchema.statics.isParticipant = async function (roomId, userId) {
+  if (!mongoose.Types.ObjectId.isValid(roomId)) {
+    return false;
+  }
+
   const chatRoom = await this.findOne({ _id: roomId });
   if (!chatRoom) {
     return false;
   }
-  return chatRoom.participants.find(
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return false;
+  }
+
+  const participant = chatRoom.participants.find(
     (p) => p.userId.toString() === userId.toString()
   );
+
+  return participant ? participant : false;
 };
 
 chatRoomSchema.statics.addParticipant = async function (
