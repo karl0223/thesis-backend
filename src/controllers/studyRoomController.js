@@ -28,6 +28,71 @@ const createChatRoom = async (req, res) => {
   }
 };
 
+const joinRoom = async (req, res) => {
+  const { roomId } = req.params;
+  const { userId } = req.user._id;
+
+  try {
+    const participant = await ChatRoom.isParticipant(roomId, userId);
+    if (
+      (participant && participant.status === "accepted") ||
+      participant.status === "owner"
+    ) {
+      // If user is already a participant and their status is "accepted", let them join the room
+      // Cancel other rooms where the user is a participant
+      const userRooms = await ChatRoom.getUserRooms(userId);
+      for (const room of userRooms) {
+        if (room._id !== roomId) {
+          await ChatRoom.cancelParticipant(room._id, userId);
+          io.to(room._id).emit("participant-cancelled", {
+            roomId: room._id,
+            userId,
+          });
+        }
+      }
+      res.status(200).send();
+    } else {
+      // If user is not already a participant or their status is "pending", add them to the list of pending participants
+      await ChatRoom.addParticipant(roomId, userId, "pending");
+      // Emit a "new-pending-participant" event to the chat room owner to notify them of the new pending participant
+      const owner = await ChatRoom.getOwner(roomId);
+      if (owner) {
+        const ownerSocketId = await getUserSocket(owner._id);
+        if (ownerSocketId) {
+          io.to(ownerSocketId).emit("new-pending-participant", {
+            roomId,
+            userId,
+          });
+        }
+      }
+      res.status(202).send();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send();
+  }
+};
+
+const allRequestedRooms = async (req, res) => {
+  try {
+    const userRooms = await ChatRoom.getUserRooms(req.user._id);
+    const acceptedRooms = userRooms.filter((room) =>
+      room.participants.some(
+        (p) => p.userId == req.user._id && p.status === "accepted"
+      )
+    );
+    const pendingRooms = userRooms.filter((room) =>
+      room.participants.some(
+        (p) => p.userId == req.user._id && p.status === "pending"
+      )
+    );
+    res.status(200).json({ acceptedRooms, pendingRooms });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
+
 const getPublicRooms = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -176,7 +241,9 @@ const acceptInvite = async (req, res) => {
 };
 
 export {
+  joinRoom,
   createChatRoom,
+  allRequestedRooms,
   getPublicRooms,
   getPrivateRooms,
   getMessages,

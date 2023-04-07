@@ -1,7 +1,9 @@
 import express from "express";
 import { auth } from "../middleware/auth.js";
 import {
+  joinRoom,
   createChatRoom,
+  allRequestedRooms,
   getPublicRooms,
   getPrivateRooms,
   getMessages,
@@ -13,7 +15,9 @@ import {
 
 const studyRoomRouter = express.Router();
 
-studyRoomRouter.get("/api/studyroom", auth, getPublicRooms);
+studyRoomRouter.get("/api/studyroom", auth, allRequestedRooms);
+
+studyRoomRouter.get("/api/studyroom/public", auth, getPublicRooms);
 
 studyRoomRouter.get("/api/studyroom/private", auth, getPrivateRooms);
 
@@ -24,6 +28,8 @@ studyRoomRouter.get(
   auth,
   getParticipants
 );
+
+studyRoomRouter.post("/api/studyroom/join/:roomId", auth, joinRoom);
 
 studyRoomRouter.post("/api/studyroom/create", auth, createChatRoom);
 

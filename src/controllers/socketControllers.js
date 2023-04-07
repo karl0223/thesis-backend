@@ -40,6 +40,18 @@ function socketController(io) {
           participant.status === "owner"
         ) {
           // If user is already a participant and their status is "accepted", let them join the room
+          // Cancel other rooms where the user is a participant
+          const userRooms = await ChatRoom.getUserRooms(userId);
+          for (const room of userRooms) {
+            if (room._id !== roomId) {
+              await ChatRoom.cancelParticipant(room._id, userId);
+              socket.leave(room._id);
+              io.to(room._id).emit("participant-cancelled", {
+                roomId: room._id,
+                userId,
+              });
+            }
+          }
           socket.join(roomId);
         } else {
           // If user is not already a participant or their status is "pending", add them to the list of pending participants
@@ -143,6 +155,10 @@ function socketController(io) {
     // Listen for "kick-participant" events
     socket.on("kick-participant", async ({ roomId, id }) => {
       await kickParticipant(roomId, id);
+    });
+
+    socket.onAny((eventName, ...args) => {
+      console.log(`Event ${eventName} fired with args:`, args);
     });
 
     // Listen for disconnections

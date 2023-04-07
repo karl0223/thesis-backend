@@ -46,6 +46,48 @@ chatRoomSchema.methods.getMessages = async function () {
   return messages;
 };
 
+chatRoomSchema.statics.getUserRooms = async function (userId) {
+  try {
+    // Find all the chat rooms where the given user is a participant
+    const rooms = await this.find({ "participants.userId": userId })
+      .populate("owner", "name")
+      .select("name owner");
+
+    return rooms;
+  } catch (err) {
+    console.error(err);
+    throw new Error("Failed to fetch user chat rooms");
+  }
+};
+
+chatRoomSchema.methods.cancelParticipant = async function (userId) {
+  try {
+    // Find the participant with the given user ID
+    const participant = this.participants.find(
+      (p) => String(p.userId) === String(userId)
+    );
+
+    if (!participant) {
+      throw new Error("User is not a participant in this chat room");
+    }
+
+    if (participant.status === "owner") {
+      throw new Error("Owner cannot be cancelled from the chat room");
+    }
+
+    // Remove the participant from the list of participants
+    this.participants = this.participants.filter(
+      (p) => String(p.userId) !== String(userId)
+    );
+
+    // Save the updated chat room
+    await this.save();
+  } catch (err) {
+    console.error(err);
+    throw new Error("Failed to cancel participant from the chat room");
+  }
+};
+
 chatRoomSchema.statics.isParticipant = async function (roomId, userId) {
   const chatRoom = await this.findOne({ _id: roomId });
   if (!chatRoom) {

@@ -32,6 +32,17 @@ const inviteUser = async (io, roomId, inviteeId) => {
 const acceptInvitation = async (io, roomId, userId) => {
   try {
     await ChatRoom.updateParticipantStatus(roomId, userId, "accepted");
+
+    // Fetch the user's joined rooms
+    const userRooms = await ChatRoom.getUserRooms(userId);
+
+    // Cancel the user's participation in other rooms
+    for (const room of userRooms) {
+      if (room._id.toString() !== roomId.toString()) {
+        await ChatRoom.cancelParticipant(room._id, userId);
+      }
+    }
+
     // Emit a "join-accepted" event to the user to indicate that their request has been accepted
     io.to(userId).emit("join-accepted", { roomId });
     // Emit a "user-joined" event to all users in the chat room to notify them of the new user
