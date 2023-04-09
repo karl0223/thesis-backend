@@ -60,10 +60,15 @@ chatRoomSchema.statics.getUserRooms = async function (userId) {
   }
 };
 
-chatRoomSchema.methods.cancelParticipant = async function (userId) {
+chatRoomSchema.statics.cancelParticipant = async function (roomId, userId) {
   try {
+    const chatRoom = await this.findById(roomId);
+    if (!chatRoom) {
+      throw new Error("Chat room not found");
+    }
+
     // Find the participant with the given user ID
-    const participant = this.participants.find(
+    const participant = chatRoom.participants.find(
       (p) => String(p.userId) === String(userId)
     );
 
@@ -71,17 +76,20 @@ chatRoomSchema.methods.cancelParticipant = async function (userId) {
       throw new Error("User is not a participant in this chat room");
     }
 
-    if (participant.status === "owner") {
-      throw new Error("Owner cannot be cancelled from the chat room");
+    if (
+      participant.status === "owner" &&
+      chatRoom.owner.toString() === userId.toString()
+    ) {
+      return; // Skip cancellation if the user is the current owner of the chatroom with a participant status of owner
     }
 
     // Remove the participant from the list of participants
-    this.participants = this.participants.filter(
+    chatRoom.participants = chatRoom.participants.filter(
       (p) => String(p.userId) !== String(userId)
     );
 
     // Save the updated chat room
-    await this.save();
+    await chatRoom.save();
   } catch (err) {
     console.error(err);
     throw new Error("Failed to cancel participant from the chat room");

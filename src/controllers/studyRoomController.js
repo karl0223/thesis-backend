@@ -81,7 +81,7 @@ const joinRoom = async (req, res) => {
 
 const getPendingChatRoom = async (req, res) => {
   try {
-    const chatRoom = await ChatRoom.findOne({
+    const chatRoom = await ChatRoom.find({
       "participants.userId": req.user._id,
       "participants.status": "pending",
     }).populate("participants.userId");
@@ -182,6 +182,32 @@ const sendMessage = async (req, res) => {
   }
 };
 
+const getOwnerRoomPendingParticipants = async (req, res) => {
+  const { roomId } = req.params;
+  const owner = req.user._id;
+
+  try {
+    // Check if the user is the owner of the chat room
+    const chatRoom = await ChatRoom.findById(roomId);
+    // const chatRoom = await ChatRoom.findOne({ owner: owner }); use only if you want to only get the owner's room
+    if (!chatRoom) {
+      throw new Error("Chat room not found");
+    }
+    if (String(chatRoom.owner) !== String(owner)) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    const pendingParticipants = chatRoom.participants.filter(
+      (p) => p.status === "pending"
+    );
+
+    res.status(200).send({ pendingParticipants });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send();
+  }
+};
+
 const getParticipants = async (req, res) => {
   const { roomId } = req.params;
 
@@ -218,6 +244,69 @@ const sendInvite = async (req, res) => {
   } catch (error) {
     // Send an error response if there was an error inviting the user to the chat room
     res.status(400).send({ message: error.message });
+  }
+};
+
+const acceptUserRequest = async (req, res) => {
+  const io = req.app.get("socketio");
+  const { roomId, userId } = req.params;
+  const owner = req.user._id;
+
+  try {
+    // Check if the user is the owner of the chat room
+    const chatRoom = await ChatRoom.findById(roomId);
+    // const chatRoom = await ChatRoom.findOne({ owner: owner }); use only if you want to only get the owner's room
+    if (!chatRoom) {
+      return res.status(404).send("Chat room not found");
+    }
+    if (String(chatRoom.owner) !== String(owner)) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    const pendingParticipants = chatRoom.participants.filter(
+      (p) => p.status === "pending"
+    );
+
+    // Find the participant with the given user ID in the pending list
+    const participant = pendingParticipants.find(
+      (p) => String(p.userId) === userId
+    );
+
+    if (!participant) {
+      return res.send("User is not in the pending list");
+    }
+
+    // Change the participant's status to accepted
+    participant.status = "accepted";
+
+    const userRooms = await ChatRoom.getUserRooms(userId);
+
+    // Cancel the user's participation in other rooms
+    for (const room of userRooms) {
+      if (room.owner.toString() === userId.toString()) {
+        continue; // Skip to the next iteration of the loop
+      }
+
+      if (room._id.toString() !== roomId.toString()) {
+        await ChatRoom.cancelParticipant(room._id, userId);
+      }
+    }
+
+    await chatRoom.save();
+
+    // Send a notification to the accepted participant
+    const socketId = getUserSocket(userId);
+    if (socketId) {
+      io.to(socketId).emit("participant-accepted", {
+        roomId: chatRoom._id,
+        userId,
+      });
+    }
+
+    res.status(200).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send();
   }
 };
 
@@ -259,8 +348,7 @@ const getUserChatRooms = async (req, res) => {
     });
 
     if (!chatRoom) {
-      res.status(404).send("Chat room not found");
-      return;
+      return res.send("Chat room not found");
     }
 
     // Fetch the messages for the chat room
@@ -305,6 +393,8 @@ const pendingParticipants = async (req, res) => {
 export {
   joinRoom,
   createChatRoom,
+  acceptUserRequest,
+  getOwnerRoomPendingParticipants,
   getPendingChatRoom,
   getUserChatRooms,
   getPublicRooms,
