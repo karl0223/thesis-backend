@@ -40,10 +40,6 @@ const joinRoom = async (req, res) => {
       (participant && participant.status === "accepted") ||
       participant.status === "owner"
     ) {
-      // If user is already a participant and their status is "accepted", let them join the room
-      const socketId = getUserSocket(req.user._id);
-      io.sockets.connected[socketId].join(roomId);
-      // If user is already a participant and their status is "accepted", let them join the room
       // Cancel other rooms where the user is a participant
       const userRooms = await ChatRoom.getUserRooms(userId);
       for (const room of userRooms) {

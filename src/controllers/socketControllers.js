@@ -33,46 +33,7 @@ function socketController(io) {
     console.log("User is authenticated. User id:", socket.request.user.id);
 
     socket.on("join-room", async ({ roomId }) => {
-      try {
-        const participant = await ChatRoom.isParticipant(roomId, userId);
-        if (
-          (participant && participant.status === "accepted") ||
-          participant.status === "owner"
-        ) {
-          // If user is already a participant and their status is "accepted", let them join the room
-          // Cancel other rooms where the user is a participant
-          const userRooms = await ChatRoom.getUserRooms(userId);
-          for (const room of userRooms) {
-            if (room._id !== roomId) {
-              await ChatRoom.cancelParticipant(room._id, userId);
-              socket.leave(room._id);
-              io.to(room._id).emit("participant-cancelled", {
-                roomId: room._id,
-                userId,
-              });
-            }
-          }
-          socket.join(roomId);
-        } else {
-          // If user is not already a participant or their status is "pending", add them to the list of pending participants
-          await ChatRoom.addParticipant(roomId, userId, "pending");
-          // Emit a "join-pending" event to the user to indicate that their request is pending
-          socket.emit("join-pending", { roomId, userId });
-          // Emit a "new-pending-participant" event to the chat room owner to notify them of the new pending participant
-          const owner = await ChatRoom.getOwner(roomId);
-          if (owner) {
-            const ownerSocketId = await getUserSocket(owner._id);
-            if (ownerSocketId) {
-              io.to(ownerSocketId).emit("new-pending-participant", {
-                roomId,
-                userId,
-              });
-            }
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
+      socket.join(roomId);
     });
 
     // new pending participant
