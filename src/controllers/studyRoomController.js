@@ -165,17 +165,21 @@ const sendMessage = async (req, res) => {
     const { roomId, message } = req.body;
 
     // Save the message to the database
-    await Message.create({ roomId, userId: req.user._id, message });
+    var newMessage = await Message.create({
+      roomId,
+      userId: req.user._id,
+      message,
+    });
 
     // Emit a "message-sent" event to all users in the chat room to notify them of the new message
     const io = req.app.get("socketio");
     io.to(roomId).emit("message-sent", {
-      roomId,
       userId: req.user_id,
-      message,
+      message: newMessage,
     });
 
-    res.status(200).send("Message sent successfully.");
+    console.log(newMessage);
+    res.status(200).json(newMessage);
   } catch (err) {
     console.log(err);
     res.status(500).send("Server Error");
