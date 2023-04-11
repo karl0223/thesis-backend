@@ -149,11 +149,10 @@ const getPrivateRooms = async (req, res) => {
 
 const getMessages = async (req, res) => {
   try {
-    const messages = await Message.find({ roomId: req.params.roomId }).populate(
-      "userId",
-      "firstName"
-    );
-    res.json(messages);
+    const messages = await Message.find({ roomId: req.params.roomId })
+      .populate("userId", "firstName")
+      .sort("-createdAt");
+    res.json(messages.reverse());
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
