@@ -174,7 +174,7 @@ const sendMessage = async (req, res) => {
     // Emit a "message-sent" event to all users in the chat room to notify them of the new message
     const io = req.app.get("socketio");
     io.to(roomId).emit("message-sent", {
-      userId: req.user_id,
+      userId: req.user._id,
       message: newMessage,
     });
 
@@ -349,6 +349,9 @@ const getUserChatRooms = async (req, res) => {
           participants: { $elemMatch: { userId: userId, status: "accepted" } },
         },
       ],
+    }).populate({
+      path: "participants.userId",
+      select: "firstName lastName",
     });
 
     if (!chatRoom) {
