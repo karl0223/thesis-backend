@@ -354,7 +354,7 @@ const getUserChatRooms = async (req, res) => {
     });
 
     if (!chatRoom) {
-      return res.send("Chat room not found");
+      return res.status(404).send("Chat room not found");
     }
 
     // Fetch the messages for the chat room
