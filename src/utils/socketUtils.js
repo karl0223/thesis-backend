@@ -10,7 +10,7 @@ async function updateUserSocket(userId, socketId) {
 
 async function deleteUserSocket(userId) {
   try {
-    await User.deleteOne({ userId });
+    await User.deleteOne({ _id: userId });
   } catch (error) {
     console.error(error);
   }
@@ -18,7 +18,7 @@ async function deleteUserSocket(userId) {
 
 async function getUserSocket(userId) {
   try {
-    const user = await User.findOne({ userId });
+    const user = await User.findOne({ _id: userId });
     return user ? user.socketId : null;
   } catch (error) {
     console.error(error);
