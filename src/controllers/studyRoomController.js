@@ -62,12 +62,19 @@ const joinRoom = async (req, res) => {
       await ChatRoom.addParticipant(roomId, userId, "pending");
       // Emit a "new-pending-participant" event to the chat room owner to notify them of the new pending participant
       const owner = await ChatRoom.getOwner(roomId);
+      const user = await ChatRoom.findById(roomId)
+        .populate({
+          path: "participants",
+          match: { userId },
+          select: "userId firstName lastName status",
+        })
+        .exec();
       if (owner) {
         const ownerSocketId = await getUserSocket(owner._id);
         if (ownerSocketId) {
           io.to(ownerSocketId).emit("new-pending-participant", {
             roomId,
-            userId,
+            user,
           });
         }
       }
