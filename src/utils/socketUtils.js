@@ -10,7 +10,7 @@ const updateUserSocket = async (userId, socketId) => {
 
 const deleteUserSocket = async (userId) => {
   try {
-    await User.deleteOne({ _id: userId });
+    await User.updateOne({ _id: userId }, { $set: { socketId: "" } });
   } catch (error) {
     console.error(error);
   }
