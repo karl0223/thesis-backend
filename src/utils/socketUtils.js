@@ -1,22 +1,22 @@
 import User from "../models/user.js";
 
-async function updateUserSocket(userId, socketId) {
+const updateUserSocket = async (userId, socketId) => {
   try {
     await User.updateOne({ _id: userId }, { socketId }, { upsert: true });
   } catch (error) {
     console.error(error);
   }
-}
+};
 
-async function deleteUserSocket(userId) {
+const deleteUserSocket = async (userId) => {
   try {
     await User.deleteOne({ _id: userId });
   } catch (error) {
     console.error(error);
   }
-}
+};
 
-async function getUserSocket(userId) {
+const getUserSocket = async (userId) => {
   try {
     const user = await User.findOne({ _id: userId });
     return user ? user.socketId : null;
@@ -24,6 +24,6 @@ async function getUserSocket(userId) {
     console.error(error);
     return null;
   }
-}
+};
 
 export { updateUserSocket, deleteUserSocket, getUserSocket };
