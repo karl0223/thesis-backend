@@ -306,10 +306,17 @@ const acceptUserRequest = async (req, res) => {
 
     await chatRoom.save();
 
+    // Get the latest chat messages in the chat room
+    const latestMessages = await Message.find({ roomId })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate("userId", "firstName lastName");
+
     // Send a notification to the accepted participant
     const socketId = await getUserSocket(userId);
     if (socketId) {
       io.to(socketId).emit("participant-accepted", {
+        messages: latestMessages,
         chatRoom,
         userId,
       });
