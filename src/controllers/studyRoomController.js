@@ -62,10 +62,12 @@ const joinRoom = async (req, res) => {
       await ChatRoom.addParticipant(roomId, userId, "pending");
       // Emit a "new-pending-participant" event to the chat room owner to notify them of the new pending participant
       const owner = await ChatRoom.getOwner(roomId);
-      const user = await ChatRoom.findById(roomId)
+      const newParticipant = await ChatRoom.findOne(
+        { _id: roomId, "participants.userId": userId },
+        { _id: 0, "participants.$": 1 }
+      )
         .populate({
-          path: "participants",
-          match: { userId },
+          path: "participants.userId",
           select: "userId firstName lastName status",
         })
         .exec();
@@ -74,7 +76,7 @@ const joinRoom = async (req, res) => {
         if (ownerSocketId) {
           io.to(ownerSocketId).emit("new-pending-participant", {
             roomId,
-            user,
+            user: newParticipant,
           });
         }
       }
