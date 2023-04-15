@@ -307,7 +307,7 @@ const acceptUserRequest = async (req, res) => {
     await chatRoom.save();
 
     // Send a notification to the accepted participant
-    const socketId = getUserSocket(userId);
+    const socketId = await getUserSocket(userId);
     if (socketId) {
       io.to(socketId).emit("participant-accepted", {
         chatRoom,
