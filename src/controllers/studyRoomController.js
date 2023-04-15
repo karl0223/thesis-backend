@@ -295,7 +295,7 @@ const acceptUserRequest = async (req, res) => {
 
     // Cancel the user's participation in other rooms
     for (const room of userRooms) {
-      if (room.owner.toString() === userId.toString()) {
+      if (room.owner && room.owner.toString() === userId.toString()) {
         continue; // Skip to the next iteration of the loop
       }
 
