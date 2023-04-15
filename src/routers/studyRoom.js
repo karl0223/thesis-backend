@@ -15,6 +15,7 @@ import {
   sendMessage,
   sendInvite,
   acceptInvite,
+  kickAllParticipants,
 } from "../controllers/studyRoomController.js";
 import { kickParticipant } from "../controllers/groupChatController.js";
 
@@ -57,7 +58,13 @@ studyRoomRouter.post("/api/studyroom/messages", auth, sendMessage);
 
 studyRoomRouter.post("/api/studyroom/invite", auth, sendInvite);
 
-studyRoomRouter.post("/api/studyroom/accept", auth, acceptInvite);
+studyRoomRouter.post("/api/studyroom/aSccept", auth, acceptInvite);
+
+studyRoomRouter.post(
+  "/api/studyroom/kick-all/:roomId",
+  auth,
+  kickAllParticipants
+);
 
 studyRoomRouter.post(
   "/api/studyroom/kick/:roomId/:userId",

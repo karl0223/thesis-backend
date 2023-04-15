@@ -310,7 +310,7 @@ const acceptUserRequest = async (req, res) => {
     const socketId = getUserSocket(userId);
     if (socketId) {
       io.to(socketId).emit("participant-accepted", {
-        roomId: chatRoom._id,
+        chatRoom,
         userId,
       });
     }
@@ -405,6 +405,46 @@ const pendingParticipants = async (req, res) => {
   }
 };
 
+const kickAllParticipants = async (req, res) => {
+  const { roomId } = req.params;
+
+  try {
+    const chatroom = await ChatRoom.findById(roomId)
+      .populate("owner")
+      .populate("participants.userId");
+    if (!chatroom) {
+      return res.status(404).send("Chat room not found");
+    }
+
+    const owner = chatroom.owner;
+    const participants = chatroom.participants;
+
+    // Filter out the owner from the participants
+    const participantsToKick = participants.filter((participant) => {
+      return participant.userId._id.toString() !== owner._id.toString();
+    });
+
+    // Kick each participant
+    for (const participant of participantsToKick) {
+      await ChatRoom.updateOne(
+        { _id: roomId },
+        { $pull: { participants: { userId: participant.userId._id } } }
+      );
+
+      // Emit a "participant-kicked" event to the participant's socket
+      const participantSocketId = await getUserSocket(participant.userId._id);
+      if (participantSocketId) {
+        io.to(participantSocketId).emit("participant-kicked", { roomId });
+      }
+    }
+
+    res.status(200).send("All participants except the owner have been kicked");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send();
+  }
+};
+
 export {
   joinRoom,
   createChatRoom,
@@ -420,4 +460,5 @@ export {
   pendingParticipants,
   sendInvite,
   acceptInvite,
+  kickAllParticipants,
 };
