@@ -110,13 +110,13 @@ const getPublicRooms = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
-    const startIndex = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     const totalRooms = await ChatRoom.countDocuments({ status: "public" });
     const totalPages = Math.ceil(totalRooms / limit);
 
     const studyRooms = await ChatRoom.find({ status: "public" })
-      .skip(startIndex)
+      .skip(skip)
       .limit(limit);
 
     res.json({
@@ -135,13 +135,13 @@ const getPrivateRooms = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
-    const startIndex = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     const totalRooms = await ChatRoom.countDocuments({ status: "private" });
     const totalPages = Math.ceil(totalRooms / limit);
 
     const studyRooms = await ChatRoom.find({ status: "private" })
-      .skip(startIndex)
+      .skip(skip)
       .limit(limit);
 
     res.json({
@@ -157,11 +157,29 @@ const getPrivateRooms = async (req, res) => {
 };
 
 const getMessages = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
   try {
     const messages = await Message.find({ roomId: req.params.roomId })
-      .populate("userId", "firstName")
-      .sort("-createdAt");
-    res.json(messages.reverse());
+      .populate("userId", "firstName lastName")
+      .sort("-createdAt")
+      .skip(skip)
+      .limit(limit);
+
+    const totalCount = await Message.countDocuments({
+      roomId: req.params.roomId,
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.json({
+      messages,
+      page,
+      totalPages,
+      totalCount,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
