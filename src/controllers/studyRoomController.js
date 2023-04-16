@@ -312,7 +312,7 @@ const acceptUserRequest = async (req, res) => {
 
     // Find the participant with the given user ID in the pending list
     const participant = pendingParticipants.find(
-      (p) => String(p.userId) === userId
+      (p) => p.userId && String(p.userId) === userId
     );
 
     if (!participant) {
