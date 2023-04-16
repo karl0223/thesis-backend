@@ -201,14 +201,21 @@ const sendMessage = async (req, res) => {
     const io = req.app.get("socketio");
     io.to(roomId).emit("message-sent", {
       user: {
-        "first name": req.user.firstName,
-        "last name": req.user.lastName,
+        userId: req.user._id,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
       },
       message: newMessage,
     });
 
-    console.log(newMessage);
-    res.status(200).json(newMessage);
+    res.status(200).json({
+      message: newMessage,
+      user: {
+        userId: req.user._id,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+      },
+    });
   } catch (err) {
     console.log(err);
     res.status(500).send("Server Error");
