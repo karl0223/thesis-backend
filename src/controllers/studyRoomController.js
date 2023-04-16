@@ -200,7 +200,10 @@ const sendMessage = async (req, res) => {
     // Emit a "message-sent" event to all users in the chat room to notify them of the new message
     const io = req.app.get("socketio");
     io.to(roomId).emit("message-sent", {
-      userId: req.user._id,
+      user: {
+        "first name": req.user.firstName,
+        "last name": req.user.lastName,
+      },
       message: newMessage,
     });
 
