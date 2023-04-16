@@ -294,7 +294,10 @@ const acceptUserRequest = async (req, res) => {
 
   try {
     // Check if the user is the owner of the chat room
-    const chatRoom = await ChatRoom.findById(roomId);
+    const chatRoom = await ChatRoom.findById(roomId).populate({
+      path: "participants.userId",
+      select: "firstName lastName",
+    });
     // const chatRoom = await ChatRoom.findOne({ owner: owner }); use only if you want to only get the owner's room
     if (!chatRoom) {
       return res.status(404).send("Chat room not found");
