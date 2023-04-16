@@ -58,7 +58,7 @@ studyRoomRouter.post("/api/studyroom/messages", auth, sendMessage);
 
 studyRoomRouter.post("/api/studyroom/invite", auth, sendInvite);
 
-studyRoomRouter.post("/api/studyroom/aSccept", auth, acceptInvite);
+studyRoomRouter.post("/api/studyroom/accept", auth, acceptInvite);
 
 studyRoomRouter.post(
   "/api/studyroom/kick-all/:roomId",

@@ -312,11 +312,11 @@ const acceptUserRequest = async (req, res) => {
 
     // Find the participant with the given user ID in the pending list
     const participant = pendingParticipants.find(
-      (p) => p.userId && String(p.userId) === userId
+      (p) => p.userId && p.userId._id.toString() === userId
     );
 
     if (!participant) {
-      return res.send("User is not in the pending list");
+      return res.status(404).send("User is not in the pending list");
     }
 
     // Change the participant's status to accepted
@@ -356,7 +356,7 @@ const acceptUserRequest = async (req, res) => {
     res.status(200).send();
   } catch (err) {
     console.error(err);
-    res.status(500).send();
+    res.status(500).send("Server error");
   }
 };
 
