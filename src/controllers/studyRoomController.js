@@ -10,6 +10,11 @@ const createChatRoom = async (req, res) => {
       throw new Error("Only tutors can create study rooms");
     }
 
+    const hasRoom = await ChatRoom.findOne({ owner: req.user._id });
+    if (hasRoom) {
+      throw new Error("User already has a study room");
+    }
+
     const { name, status } = req.body;
     if (!name || !status) {
       throw new Error("Name and status are required");
@@ -95,17 +100,53 @@ const leaveChatRoom = async (req, res) => {
   const io = req.app.get("socketio");
 
   try {
-    await ChatRoom.removeParticipant(roomId, userId);
-    // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
-    io.to(roomId).emit("user-left", {
-      roomId,
-      user: {
-        "first name": req.user.firstName,
-        "last name": req.user.lastName,
-      },
-    });
+    const chatRoom = await ChatRoom.findById(roomId);
 
-    res.send();
+    if (!chatRoom) {
+      return res.status(404).json({ msg: "Chat room not found" });
+    }
+
+    const isParticipant = await ChatRoom.isParticipant(roomId, userId);
+
+    if (!isParticipant) {
+      return res
+        .status(403)
+        .send("You are not a participant of this chat room");
+    }
+
+    if (chatRoom.owner.toString() === userId.toString()) {
+      // Soft delete the chat room if the user is the owner
+      chatRoom.deletedAt = new Date();
+      await chatRoom.save();
+
+      const participantsToKick = chatRoom.participants;
+      // Kick each participant
+      for (const participant of participantsToKick) {
+        await ChatRoom.updateOne(
+          { _id: roomId },
+          { $pull: { participants: { userId: participant.userId._id } } }
+        );
+
+        // Emit a "participant-kicked" event to the participant's socket
+        const participantSocketId = await getUserSocket(participant.userId._id);
+        if (participantSocketId) {
+          io.to(participantSocketId).emit("participant-kicked", { roomId });
+        }
+      }
+      res.send();
+    } else {
+      await ChatRoom.removeParticipant(roomId, userId);
+      // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
+      io.to(roomId).emit("user-left", {
+        roomId,
+        user: {
+          "first name": req.user.firstName,
+          "last name": req.user.lastName,
+        },
+      });
+
+      res.send(`${req.user.firstName} ${req.user.lastName} left the room`);
+    }
   } catch (err) {
     console.log(err);
     res.status(500).send("Server Error");
@@ -252,10 +293,10 @@ const getOwnerRoomPendingParticipants = async (req, res) => {
 
   try {
     // Check if the user is the owner of the chat room
-    const chatRoom = await ChatRoom.findById(roomId);
+    const chatRoom = await ChatRoom.findOne({ _id: roomId });
     // const chatRoom = await ChatRoom.findOne({ owner: owner }); use only if you want to only get the owner's room
     if (!chatRoom) {
-      throw new Error("Chat room not found");
+      return res.status(404).send("Chat room not found");
     }
     if (String(chatRoom.owner) !== String(owner)) {
       return res.status(401).send("Unauthorized");

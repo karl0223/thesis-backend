@@ -64,6 +64,20 @@ chatRoomSchema.statics.getUserRooms = async function (userId) {
   }
 };
 
+chatRoomSchema.statics.getParticipants = async function (roomId) {
+  try {
+    const chatRoom = await this.findById(roomId);
+    if (!chatRoom) {
+      throw new Error("Chat room not found");
+    }
+
+    return chatRoom.participants;
+  } catch (err) {
+    console.error(err);
+    throw new Error("Failed to fetch chat room participants");
+  }
+};
+
 chatRoomSchema.statics.cancelParticipant = async function (roomId, userId) {
   try {
     const chatRoom = await this.findById(roomId);
@@ -181,6 +195,17 @@ chatRoomSchema.statics.getOwner = async function (roomId) {
 };
 
 // Add a pre-hook to set the deletedAt field when deleting a document
+
+chatRoomSchema.pre("findById", function (next) {
+  this.where("deletedAt").equals(null);
+  next();
+});
+
+chatRoomSchema.pre("findOne", function (next) {
+  this.where("deletedAt").equals(null);
+  next();
+});
+
 chatRoomSchema.pre("deleteOne", function (next) {
   this.deletedAt = new Date();
   next();
