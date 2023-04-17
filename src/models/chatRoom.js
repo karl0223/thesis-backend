@@ -196,22 +196,18 @@ chatRoomSchema.statics.getOwner = async function (roomId) {
 
 // Add a pre-hook to set the deletedAt field when deleting a document
 
-chatRoomSchema.pre("findById", function (next) {
-  this.where("deletedAt").equals(null);
-  next();
+chatRoomSchema.pre(["find", "findById", "findOne"], function (next) {
+  // Check if the query has already specified the `deletedAt` condition
+  if (Object.keys(this._conditions).includes("deletedAt")) {
+    next();
+  } else {
+    // Apply the `deletedAt` condition to filter out soft deleted rooms
+    this.where("deletedAt").equals(null);
+    next();
+  }
 });
 
-chatRoomSchema.pre("findOne", function (next) {
-  this.where("deletedAt").equals(null);
-  next();
-});
-
-chatRoomSchema.pre("deleteOne", function (next) {
-  this.deletedAt = new Date();
-  next();
-});
-
-chatRoomSchema.pre("findOneAndDelete", function (next) {
+chatRoomSchema.pre(["deleteOne", "findOneAndDelete"], function (next) {
   this.deletedAt = new Date();
   next();
 });
