@@ -2,21 +2,14 @@ import {
   inviteUser,
   acceptInvitation,
   rejectInvitation,
-  leaveChatRoom,
   promoteParticipant,
   demoteOwner,
-  kickParticipant,
 } from "./groupChatController.js";
 
 import { createChatRoom } from "./studyRoomController.js";
 
-import ChatRoom from "../models/chatRoom.js";
 import Message from "../models/messages.js"; // added import
-import {
-  updateUserSocket,
-  deleteUserSocket,
-  getUserSocket,
-} from "../utils/socketUtils.js";
+import { updateUserSocket, deleteUserSocket } from "../utils/socketUtils.js";
 
 function socketController(io) {
   io.on("connection", async (socket) => {
@@ -99,9 +92,9 @@ function socketController(io) {
     });
 
     // Listen for "leave-room" events
-    socket.on("leave-room", async ({ roomId, id }) => {
-      await leaveChatRoom(roomId, id);
-    });
+    // socket.on("leave-room", async ({ roomId, id }) => {
+    //   await leaveChatRoom(roomId, id);
+    // });
 
     // Listen for "promote-participant" events
     socket.on("promote-participant", async ({ roomId, id }) => {
@@ -113,10 +106,10 @@ function socketController(io) {
       await demoteOwner(roomId, id);
     });
 
-    // Listen for "kick-participant" events
-    socket.on("kick-participant", async ({ roomId, id }) => {
-      await kickParticipant(roomId, id);
-    });
+    // // Listen for "kick-participant" events
+    // socket.on("kick-participant", async ({ roomId, id }) => {
+    //   await kickParticipant(roomId, id);
+    // });
 
     socket.onAny((eventName, ...args) => {
       console.log(`Event ${eventName} fired with args:`, args);

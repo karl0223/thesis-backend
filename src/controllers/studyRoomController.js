@@ -88,6 +88,30 @@ const joinRoom = async (req, res) => {
   }
 };
 
+// Leave a chat room
+const leaveChatRoom = async (req, res) => {
+  const { roomId } = req.params;
+  const userId = req.user._id;
+  const io = req.app.get("socketio");
+
+  try {
+    await ChatRoom.removeParticipant(roomId, userId);
+    // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
+    io.to(roomId).emit("user-left", {
+      roomId,
+      user: {
+        "first name": req.user.firstName,
+        "last name": req.user.lastName,
+      },
+    });
+
+    res.send();
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server Error");
+  }
+};
+
 const getPendingChatRoom = async (req, res) => {
   try {
     const chatRoom = await ChatRoom.find({
@@ -443,6 +467,38 @@ const pendingParticipants = async (req, res) => {
   }
 };
 
+// Kick a participant from the chat room
+const kickParticipant = async (req, res) => {
+  const io = req.app.get("socketio");
+  const { roomId, userId } = req.params;
+
+  try {
+    const chatRoom = await ChatRoom.findById(roomId);
+    if (!chatRoom) {
+      throw new Error("Chat room not found");
+    }
+
+    // Check if the user is a participant in the chat room
+    const participant = chatRoom.participants.find(
+      (p) => String(p.userId) === String(userId)
+    );
+    if (!participant) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    await ChatRoom.removeParticipant(roomId, userId);
+    // Emit a "user-kicked" event to the user to indicate that they have been kicked
+    io.to(userId).emit("user-kicked", { roomId });
+    // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
+    io.to(roomId).emit("user-left", { roomId, userId });
+
+    res.status(200).send();
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server Error");
+  }
+};
+
 const kickAllParticipants = async (req, res) => {
   const { roomId } = req.params;
 
@@ -486,6 +542,7 @@ const kickAllParticipants = async (req, res) => {
 export {
   joinRoom,
   createChatRoom,
+  leaveChatRoom,
   acceptUserRequest,
   getOwnerRoomPendingParticipants,
   getPendingChatRoom,
@@ -498,5 +555,6 @@ export {
   pendingParticipants,
   sendInvite,
   acceptInvite,
+  kickParticipant,
   kickAllParticipants,
 };

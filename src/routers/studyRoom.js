@@ -3,6 +3,7 @@ import { auth } from "../middleware/auth.js";
 import {
   joinRoom,
   createChatRoom,
+  leaveChatRoom,
   acceptUserRequest,
   getOwnerRoomPendingParticipants,
   getPendingChatRoom,
@@ -15,9 +16,9 @@ import {
   sendMessage,
   sendInvite,
   acceptInvite,
+  kickParticipant,
   kickAllParticipants,
 } from "../controllers/studyRoomController.js";
-import { kickParticipant } from "../controllers/groupChatController.js";
 
 const studyRoomRouter = express.Router();
 
@@ -71,6 +72,8 @@ studyRoomRouter.post(
   auth,
   kickParticipant
 );
+
+studyRoomRouter.post("/api/studyroom/leave/:roomId", auth, leaveChatRoom);
 
 studyRoomRouter.patch(
   "/api/studyroom/accept-participant/:roomId/:userId",

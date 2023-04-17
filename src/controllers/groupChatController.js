@@ -66,14 +66,6 @@ const rejectInvitation = async (roomId, userId) => {
   io.to(roomId).emit("user-left", { roomId, userId });
 };
 
-// Leave a chat room
-const leaveChatRoom = async (roomId, userId) => {
-  const io = req.app.get("socketio");
-  await ChatRoom.removeParticipant(roomId, userId);
-  // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
-  io.to(roomId).emit("user-left", { roomId, userId });
-};
-
 // Promote a participant to owner
 const promoteParticipant = async (roomId, userId) => {
   const io = req.app.get("socketio");
@@ -90,44 +82,10 @@ const demoteOwner = async (roomId, userId) => {
   io.to(userId).emit("owner-demoted", { roomId });
 };
 
-// Kick a participant from the chat room
-const kickParticipant = async (req, res) => {
-  const io = req.app.get("socketio");
-  const { roomId, userId } = req.params;
-
-  try {
-    const chatRoom = await ChatRoom.findById(roomId);
-    if (!chatRoom) {
-      throw new Error("Chat room not found");
-    }
-
-    // Check if the user is a participant in the chat room
-    const participant = chatRoom.participants.find(
-      (p) => String(p.userId) === String(userId)
-    );
-    if (!participant) {
-      return res.status(401).send("Unauthorized");
-    }
-
-    await ChatRoom.removeParticipant(roomId, userId);
-    // Emit a "user-kicked" event to the user to indicate that they have been kicked
-    io.to(userId).emit("user-kicked", { roomId });
-    // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
-    io.to(roomId).emit("user-left", { roomId, userId });
-
-    res.status(200).send();
-  } catch (err) {
-    console.log(err);
-    res.status(500).send("Server Error");
-  }
-};
-
 export {
   inviteUser,
   acceptInvitation,
   rejectInvitation,
-  leaveChatRoom,
   promoteParticipant,
   demoteOwner,
-  kickParticipant,
 };

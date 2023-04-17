@@ -39,6 +39,10 @@ const chatRoomSchema = new mongoose.Schema({
     enum: ["public", "private"],
     default: "public",
   },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 chatRoomSchema.methods.getMessages = async function () {
@@ -174,6 +178,22 @@ chatRoomSchema.statics.getOwner = async function (roomId) {
     throw new Error("Chat room not found");
   }
   return chatroom.owner;
+};
+
+// Add a pre-hook to set the deletedAt field when deleting a document
+chatRoomSchema.pre("deleteOne", function (next) {
+  this.deletedAt = new Date();
+  next();
+});
+
+chatRoomSchema.pre("findOneAndDelete", function (next) {
+  this.deletedAt = new Date();
+  next();
+});
+
+// Add a static method to find only non-deleted documents
+chatRoomSchema.statics.findNonDeleted = function () {
+  return this.find({ deletedAt: null });
 };
 
 const ChatRoom = mongoose.model("ChatRoom", chatRoomSchema);
