@@ -29,6 +29,10 @@ function socketController(io) {
       socket.join(roomId);
     });
 
+    socket.on("leave-room", async ({ roomId }) => {
+      socket.leave(roomId);
+    });
+
     // new pending participant
     socket.on("new-pending-participant", ({ roomId, userId }) => {
       // Handle the new-pending-participant event
