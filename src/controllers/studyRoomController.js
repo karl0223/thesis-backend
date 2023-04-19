@@ -128,11 +128,15 @@ const leaveChatRoom = async (req, res) => {
         );
 
         // Emit a "participant-kicked" event to the participant's socket
-        const participantSocketId = await getUserSocket(participant.userId._id);
-        if (participantSocketId) {
-          io.to(participantSocketId).emit("participant-kicked", { roomId });
-        }
+        // const participantSocketId = await getUserSocket(participant.userId._id);
+        // if (participantSocketId) {
+        //   io.to(participantSocketId).emit("participant-kicked", { roomId });
+        // }
       }
+
+      //after kicking all participant, emit event to all participant to delete the room
+      io.to(roomId).emit("room-deleted", { roomId });
+
       res.send();
     } else {
       await ChatRoom.removeParticipant(roomId, userId);
@@ -140,8 +144,9 @@ const leaveChatRoom = async (req, res) => {
       io.to(roomId).emit("user-left", {
         roomId,
         user: {
-          "first name": req.user.firstName,
-          "last name": req.user.lastName,
+          userId: req.user._id,
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
         },
       });
 
