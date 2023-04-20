@@ -110,6 +110,38 @@ const userSchema = new mongoose.Schema(
     timeAndDateAvailability: {
       type: String,
     },
+    subjects: {
+      type: [
+        {
+          name: {
+            type: String,
+            required: true,
+          },
+          description: {
+            type: String,
+            required: true,
+          },
+        },
+      ],
+      validate: [
+        function (value) {
+          return this.role === "tutor" ? Array.isArray(value) : true;
+        },
+        "Subjects are only allowed for tutors",
+      ],
+    },
+    devices: [
+      {
+        deviceToken: {
+          type: String,
+          required: true,
+        },
+        lastLoggedIn: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

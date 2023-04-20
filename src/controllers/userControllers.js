@@ -2,8 +2,10 @@ import User from "../models/user.js";
 
 const signup = async (req, res) => {
   const user = new User(req.body);
+  const deviceToken = req.body.deviceToken;
 
   try {
+    user.devices = [{ deviceToken }];
     await user.save();
 
     const token = await user.generateAuthToken();
@@ -15,11 +17,14 @@ const signup = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const user = await User.findByCredentials(
-      req.body.email,
-      req.body.password
-    );
+    const { email, password, deviceToken } = req.body;
+
+    const user = await User.findByCredentials(email, password);
     const token = await user.generateAuthToken();
+
+    user.devices.push({ deviceToken });
+    await user.save();
+
     res.send({ user, token });
   } catch (e) {
     res.status(400).send();
@@ -28,9 +33,17 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
+    const deviceToken = req.body.deviceToken;
+
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token;
     });
+
+    // remove the device with the given token from the user's devices array
+    req.user.devices = req.user.devices.filter(
+      (device) => device.deviceToken !== deviceToken
+    );
+
     await req.user.save();
 
     res.send();
@@ -42,6 +55,7 @@ const logout = async (req, res) => {
 const logoutAll = async (req, res) => {
   try {
     req.user.tokens = [];
+    req.user.devices = [];
     await req.user.save();
 
     res.send();
