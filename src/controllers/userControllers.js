@@ -85,8 +85,6 @@ const logoutAll = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    const { deviceToken, fcmToken: newFcmToken } = req.body;
-
     const user = await User.findById(req.user._id)
       .populate("tutorRatings", "value")
       .populate("tuteeRatings", "value")
@@ -98,7 +96,7 @@ const getUser = async (req, res) => {
 
     // Find the index of the device with the matching deviceToken
     const deviceIndex = user.devices.findIndex(
-      (device) => device.deviceToken === deviceToken
+      (device) => device.deviceToken === req.user.devices.deviceToken
     );
 
     if (deviceIndex === -1) {
@@ -106,7 +104,7 @@ const getUser = async (req, res) => {
     }
 
     // Update the FCM token of the device
-    user.devices[deviceIndex].fcmToken = newFcmToken;
+    user.devices[deviceIndex].fcmToken = req.user.devices.fcmToken;
 
     await user.save();
 

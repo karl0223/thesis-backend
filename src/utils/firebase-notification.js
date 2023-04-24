@@ -1,6 +1,6 @@
 import admin from "firebase-admin";
-import fcm  from "fcm-notification";
-import serviceAccount from "../../lft_secret_token.json";
+import fcm from "fcm-notification";
+import serviceAccount from "../../lft_secret_token.json" assert { type: "json" };
 
 var certPath = admin.credential.cert(serviceAccount);
 var FCM = new fcm(certPath);
