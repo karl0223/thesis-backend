@@ -14,21 +14,23 @@ const auth = async (req, res, next) => {
       throw new Error();
     }
 
-    // check if the device token is present in the user's devices array
+    // check if the device token and FCM token headers are present in the request
     const deviceToken = req.header("deviceToken");
     const fcmToken = req.header("fcmToken");
 
-    const deviceIndex = user.devices.findIndex(
-      (device) => device.deviceToken === deviceToken
-    );
-    if (deviceIndex === -1) {
-      // add a new device object to the devices array
-      user.devices.push({ deviceToken, fcmToken });
-      await user.save();
-    } else {
-      // update the FCM token for the existing device object
-      user.devices[deviceIndex].fcmToken = fcmToken;
-      await user.save();
+    if (deviceToken && fcmToken) {
+      const deviceIndex = user.devices.findIndex(
+        (device) => device.deviceToken === deviceToken
+      );
+      if (deviceIndex === -1) {
+        // add a new device object to the devices array
+        user.devices.push({ deviceToken, fcmToken });
+        await user.save();
+      } else {
+        // update the FCM token for the existing device object
+        user.devices[deviceIndex].fcmToken = fcmToken;
+        await user.save();
+      }
     }
 
     req.user = user;
