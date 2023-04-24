@@ -4,10 +4,8 @@ import admin from "../utils/firebase-notification.js";
 const signup = async (req, res) => {
   const user = new User(req.body);
   const deviceToken = req.body.deviceToken;
+  const fcmToken = req.body.fcmToken;
   try {
-    const fcmToken = await admin
-      .messaging()
-      .subscribeToTopic(deviceToken, "default");
     user.devices = [{ deviceToken, fcmToken }];
     await user.save();
     const token = await user.generateAuthToken();
@@ -19,19 +17,17 @@ const signup = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password, deviceToken } = req.body;
+    const { email, password, deviceToken, fcmToken } = req.body;
 
     const user = await User.findByCredentials(email, password);
-    const fcmToken = await admin
-      .messaging()
-      .subscribeToTopic(deviceToken, "default");
+    const updatedDevice = { deviceToken, fcmToken };
     const deviceIndex = user.devices.findIndex(
       (device) => device.deviceToken === deviceToken
     );
 
     if (deviceIndex === -1) {
       // the device is new, so add it to the user's devices array
-      user.devices.push({ deviceToken, fcmToken });
+      user.devices.push(updatedDevice);
     } else {
       // update the existing device's fcmToken
       user.devices[deviceIndex].fcmToken = fcmToken;
@@ -89,6 +85,8 @@ const logoutAll = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
+    const { deviceToken, fcmToken: newFcmToken } = req.body;
+
     const user = await User.findById(req.user._id)
       .populate("tutorRatings", "value")
       .populate("tuteeRatings", "value")
