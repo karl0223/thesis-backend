@@ -135,10 +135,11 @@ const userSchema = new mongoose.Schema(
         deviceToken: {
           type: String,
           required: true,
+          unique: true,
         },
-        lastLoggedIn: {
-          type: Date,
-          default: Date.now,
+        fcmToken: {
+          type: String,
+          required: true,
         },
       },
     ],

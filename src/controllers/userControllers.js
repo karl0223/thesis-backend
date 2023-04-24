@@ -1,13 +1,15 @@
 import User from "../models/user.js";
+import admin from "../utils/firebase-notification.js";
 
 const signup = async (req, res) => {
   const user = new User(req.body);
   const deviceToken = req.body.deviceToken;
-
   try {
-    user.devices = [{ deviceToken }];
+    const fcmToken = await admin
+      .messaging()
+      .subscribeToTopic(deviceToken, "default");
+    user.devices = [{ deviceToken, fcmToken }];
     await user.save();
-
     const token = await user.generateAuthToken();
     res.status(201).send({ user, token });
   } catch (e) {
@@ -20,10 +22,23 @@ const login = async (req, res) => {
     const { email, password, deviceToken } = req.body;
 
     const user = await User.findByCredentials(email, password);
-    const token = await user.generateAuthToken();
+    const fcmToken = await admin
+      .messaging()
+      .subscribeToTopic(deviceToken, "default");
+    const deviceIndex = user.devices.findIndex(
+      (device) => device.deviceToken === deviceToken
+    );
 
-    user.devices.push({ deviceToken });
+    if (deviceIndex === -1) {
+      // the device is new, so add it to the user's devices array
+      user.devices.push({ deviceToken, fcmToken });
+    } else {
+      // update the existing device's fcmToken
+      user.devices[deviceIndex].fcmToken = fcmToken;
+    }
+
     await user.save();
+    const token = await user.generateAuthToken();
 
     res.send({ user, token });
   } catch (e) {
@@ -44,6 +59,7 @@ const logout = async (req, res) => {
       (device) => device.deviceToken !== deviceToken
     );
 
+    await admin.messaging().unsubscribeFromTopic(deviceToken, "default");
     await req.user.save();
 
     res.send();
@@ -56,6 +72,13 @@ const logoutAll = async (req, res) => {
   try {
     req.user.tokens = [];
     req.user.devices = [];
+
+    // unsubscribe from FCM topics for all devices
+    const unsubscribePromises = req.user.devices.map((device) => {
+      return admin.messaging().unsubscribeFromTopic(device.fcmToken, "default");
+    });
+
+    await Promise.all(unsubscribePromises);
     await req.user.save();
 
     res.send();
@@ -70,6 +93,24 @@ const getUser = async (req, res) => {
       .populate("tutorRatings", "value")
       .populate("tuteeRatings", "value")
       .exec();
+
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    // Find the index of the device with the matching deviceToken
+    const deviceIndex = user.devices.findIndex(
+      (device) => device.deviceToken === deviceToken
+    );
+
+    if (deviceIndex === -1) {
+      return res.status(404).send("Device not found");
+    }
+
+    // Update the FCM token of the device
+    user.devices[deviceIndex].fcmToken = newFcmToken;
+
+    await user.save();
 
     return res.status(200).json(user);
   } catch (error) {

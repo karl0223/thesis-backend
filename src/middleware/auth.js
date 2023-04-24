@@ -16,20 +16,26 @@ const auth = async (req, res, next) => {
 
     // check if the device token is present in the user's devices array
     const deviceToken = req.header("deviceToken");
-    if (
-      !deviceToken ||
-      !user.devices.find((device) => device.deviceToken === deviceToken)
-    ) {
-      throw new Error();
+    const fcmToken = req.header("fcmToken");
+
+    const deviceIndex = user.devices.findIndex(
+      (device) => device.deviceToken === deviceToken
+    );
+    if (deviceIndex === -1) {
+      // add a new device object to the devices array
+      user.devices.push({ deviceToken, fcmToken });
+      await user.save();
+    } else {
+      // update the FCM token for the existing device object
+      user.devices[deviceIndex].fcmToken = fcmToken;
+      await user.save();
     }
 
-    req.token = token;
     req.user = user;
-    req.deviceToken = deviceToken;
-
+    req.token = token;
     next();
-  } catch (e) {
-    res.status(401).send({ error: "Please Authenticate." });
+  } catch (error) {
+    res.status(401).send({ error: "Please authenticate." });
   }
 };
 
