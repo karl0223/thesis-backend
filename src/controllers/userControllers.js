@@ -94,18 +94,6 @@ const getUser = async (req, res) => {
       return res.status(404).send("User not found");
     }
 
-    // Find the device that matches the deviceToken
-    const device = user.devices.find(
-      (device) => device.deviceToken === req.user.devices.deviceToken
-    );
-
-    if (!device) {
-      return res.status(404).send("Device not found");
-    }
-
-    // Update the FCM token of the device
-    device.fcmToken = req.user.devices.fcmToken;
-
     await user.save();
 
     return res.status(200).json(user);
