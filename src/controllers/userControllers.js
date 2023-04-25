@@ -55,7 +55,6 @@ const logout = async (req, res) => {
       (device) => device.deviceToken !== deviceToken
     );
 
-    await admin.messaging().unsubscribeFromTopic(deviceToken, "default");
     await req.user.save();
 
     res.send();
@@ -69,12 +68,6 @@ const logoutAll = async (req, res) => {
     req.user.tokens = [];
     req.user.devices = [];
 
-    // unsubscribe from FCM topics for all devices
-    const unsubscribePromises = req.user.devices.map((device) => {
-      return admin.messaging().unsubscribeFromTopic(device.fcmToken, "default");
-    });
-
-    await Promise.all(unsubscribePromises);
     await req.user.save();
 
     res.send();
