@@ -44,7 +44,7 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    const deviceToken = req.body.deviceToken;
+    const deviceToken = req.deviceToken;
 
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token;

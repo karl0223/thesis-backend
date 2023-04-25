@@ -135,7 +135,6 @@ const userSchema = new mongoose.Schema(
         deviceToken: {
           type: String,
           required: true,
-          unique: true,
         },
         fcmToken: {
           type: String,

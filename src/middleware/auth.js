@@ -33,6 +33,8 @@ const auth = async (req, res, next) => {
       }
     }
 
+    req.deviceToken = deviceToken;
+    req.fcmToken = fcmToken;
     req.user = user;
     req.token = token;
     next();
