@@ -1,7 +1,7 @@
 import ChatRoom from "../models/chatRoom.js";
 import Message from "../models/messages.js";
 import { getUserSocket } from "../utils/socketUtils.js";
-import { inviteUser, acceptInvitation } from "./groupChatController.js";
+import { inviteUser, acceptInvitation } from "../utils/chatRoomUtils.js";
 
 // Create a new chat room and add the owner as a participant
 const createChatRoom = async (req, res) => {

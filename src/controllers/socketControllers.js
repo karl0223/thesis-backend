@@ -4,7 +4,7 @@ import {
   rejectInvitation,
   promoteParticipant,
   demoteOwner,
-} from "./groupChatController.js";
+} from "../utils/chatRoomUtils.js";
 
 import { createChatRoom } from "./studyRoomController.js";
 
