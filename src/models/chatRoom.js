@@ -39,6 +39,28 @@ const chatRoomSchema = new mongoose.Schema({
     enum: ["public", "private"],
     default: "public",
   },
+  subject: {
+    subjectCode: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    subtopics: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        description: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
+  },
   deletedAt: {
     type: Date,
     default: null,

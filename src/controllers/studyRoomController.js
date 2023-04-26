@@ -15,7 +15,7 @@ const createChatRoom = async (req, res) => {
       throw new Error("User already has a study room");
     }
 
-    const { name, status } = req.body;
+    const { name, status, subjectCode, description, subtopics } = req.body;
     if (!name || !status) {
       throw new Error("Name and status are required");
     }
@@ -24,6 +24,11 @@ const createChatRoom = async (req, res) => {
       owner: req.user._id,
       name,
       status,
+      subject: {
+        subjectCode,
+        description,
+        subtopics,
+      },
     });
 
     await ChatRoom.addParticipant(chatRoom._id, req.user._id, "owner");
