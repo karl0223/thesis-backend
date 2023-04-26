@@ -1,10 +1,3 @@
-// const express = require("express");
-// require("dotenv").config();
-// require("./db/mongoose");
-// const userRouter = require("./routers/user");
-// const postRouter = require("./routers/post");
-// const tutorApplicationRouter = require("./routers/tutorApplication");
-
 import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
@@ -18,6 +11,7 @@ import analyticsRouter from "./routers/analytics.js";
 import homeRouter from "./routers/home.js";
 import { socketAuth } from "./middleware/auth.js";
 import studyRoomRouter from "./routers/studyRoom.js";
+import tutorRouter from "./routers/tutorRouter.js";
 
 const app = express();
 
@@ -41,5 +35,6 @@ app.use(reportRouter);
 app.use(analyticsRouter);
 app.use(homeRouter);
 app.use(studyRoomRouter);
+app.use(tutorRouter);
 
 export default server;

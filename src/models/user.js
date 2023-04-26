@@ -113,7 +113,7 @@ const userSchema = new mongoose.Schema(
     subjects: {
       type: [
         {
-          name: {
+          subjectCode: {
             type: String,
             required: true,
           },
@@ -121,6 +121,18 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
           },
+          subtopics: [
+            {
+              name: {
+                type: String,
+                required: true,
+              },
+              description: {
+                type: String,
+                required: true,
+              },
+            },
+          ],
         },
       ],
       validate: [

@@ -1,5 +1,4 @@
 import User from "../models/user.js";
-import admin from "../utils/firebase-notification.js";
 
 const signup = async (req, res) => {
   const user = new User(req.body);
