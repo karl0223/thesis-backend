@@ -1,9 +1,5 @@
 import User from "../models/user.js";
-import { JSDOM } from "jsdom";
-import DOMPurify from "dompurify";
-
-const window = new JSDOM("").window;
-const purify = DOMPurify(window);
+import purify from "../utils/domPurify.js";
 
 const getAllTutors = async (req, res) => {
   const { page: rawPage = 1, limit: rawLimit = 10, search } = req.query;
@@ -33,7 +29,13 @@ const getAllTutors = async (req, res) => {
   const totalPages = Math.ceil(totalTutors / limit);
 
   if (page > totalPages) {
-    return res.status(400).json({ message: "Page out of range" });
+    return res.status(400).json({
+      message: "Page out of range",
+      tutors: [],
+      currentPage: page,
+      totalPages: 0,
+      totalTutors: 0,
+    });
   }
 
   const tutors = await User.find(query)
