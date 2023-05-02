@@ -191,12 +191,7 @@ const getPublicRooms = async (req, res) => {
     const search = purify.sanitize(req.query.search);
 
     let aggregateQuery = [
-      {
-        $match: {
-          status: "public",
-          deletedAt: null,
-        },
-      },
+      { $match: { status: "public", deletedAt: null } },
       {
         $lookup: {
           from: "users",
@@ -217,6 +212,19 @@ const getPublicRooms = async (req, res) => {
           ownerName: {
             $concat: ["$owner.firstName", " ", "$owner.lastName"],
           },
+        },
+      },
+      {
+        $lookup: {
+          from: "participants",
+          localField: "_id",
+          foreignField: "chatroom",
+          as: "participants",
+        },
+      },
+      {
+        $addFields: {
+          participantCount: { $size: "$participants" },
         },
       },
       {
@@ -242,6 +250,8 @@ const getPublicRooms = async (req, res) => {
           name: 1,
           owner: { $concat: ["$owner.firstName", " ", "$owner.lastName"] },
           subject: 1,
+          participants: 1,
+          participantCount: 1,
         },
       },
       {
@@ -275,10 +285,16 @@ const getPrivateRooms = async (req, res) => {
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    const totalRooms = await ChatRoom.countDocuments({ status: "private" });
+    const totalRooms = await ChatRoom.countDocuments({
+      status: "private",
+      deletedAt: null,
+    });
     const totalPages = Math.ceil(totalRooms / limit);
 
-    const studyRooms = await ChatRoom.find({ status: "private" })
+    const studyRooms = await ChatRoom.find({
+      status: "private",
+      deletedAt: null,
+    })
       .skip(skip)
       .limit(limit);
 
@@ -300,8 +316,10 @@ const getMessages = async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
+    const chatRoom = await ChatRoom.findById(req.params.roomId).select("name");
     const messages = await Message.find({ roomId: req.params.roomId })
       .populate("userId", "firstName lastName")
+      .populate("roomId", "name")
       .sort("-createdAt")
       .skip(skip)
       .limit(limit);
@@ -317,6 +335,7 @@ const getMessages = async (req, res) => {
       page,
       totalPages,
       totalCount,
+      chatRoom,
     });
   } catch (error) {
     console.error(error);
