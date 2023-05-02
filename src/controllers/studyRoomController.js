@@ -1,5 +1,6 @@
 import ChatRoom from "../models/chatRoom.js";
 import Message from "../models/messages.js";
+import purify from "../utils/domPurify.js";
 import { getUserSocket } from "../utils/socketUtils.js";
 import { inviteUser, acceptInvitation } from "../utils/chatRoomUtils.js";
 
@@ -187,15 +188,77 @@ const getPublicRooms = async (req, res) => {
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    const totalRooms = await ChatRoom.countDocuments({ status: "public" });
+    const search = purify.sanitize(req.query.search);
+
+    let aggregateQuery = [
+      {
+        $match: {
+          status: "public",
+          deletedAt: null,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      {
+        $addFields: {
+          owner: {
+            $arrayElemAt: ["$owner", 0],
+          },
+        },
+      },
+      {
+        $addFields: {
+          ownerName: {
+            $concat: ["$owner.firstName", " ", "$owner.lastName"],
+          },
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { ownerName: { $regex: search, $options: "i" } },
+            { "subject.description": { $regex: search, $options: "i" } },
+            { "subject.subjectCode": { $regex: search, $options: "i" } },
+            { "subject.subtopics.name": { $regex: search, $options: "i" } },
+            {
+              "subject.subtopics.description": {
+                $regex: search,
+                $options: "i",
+              },
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          owner: { $concat: ["$owner.firstName", " ", "$owner.lastName"] },
+          subject: 1,
+        },
+      },
+      {
+        $facet: {
+          paginatedResults: [{ $skip: skip }, { $limit: limit }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ];
+
+    const [result] = await ChatRoom.aggregate(aggregateQuery);
+
+    const totalRooms = result.totalCount[0]?.count ?? 0;
     const totalPages = Math.ceil(totalRooms / limit);
 
-    const studyRooms = await ChatRoom.find({ status: "public" })
-      .skip(skip)
-      .limit(limit);
-
     res.json({
-      rooms: studyRooms,
+      rooms: result.paginatedResults,
       totalPages,
       currentPage: page,
       totalRooms,
