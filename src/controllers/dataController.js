@@ -1,19 +1,42 @@
 import User from "../models/user.js";
+import { JSDOM } from "jsdom";
+import DOMPurify from "dompurify";
+
+const window = new JSDOM("").window;
+const purify = DOMPurify(window);
 
 const getAllTutors = async (req, res) => {
-  const { page: rawPage = 1, limit: rawLimit = 10 } = req.query;
+  const { page: rawPage = 1, limit: rawLimit = 10, search } = req.query;
 
   const page = parseInt(rawPage, 10);
   const limit = parseInt(rawLimit, 10);
 
-  const totalTutors = await User.countDocuments({ role: "tutor" });
+  let query = { role: "tutor" };
+
+  if (search) {
+    const sanitizedSearch = purify.sanitize(search);
+    const searchRegex = new RegExp(sanitizedSearch, "i");
+    query.$or = [
+      { firstName: searchRegex },
+      { lastName: searchRegex },
+      { "subjects.subjectCode": searchRegex },
+      { "subjects.description": searchRegex },
+      { "subjects.subtopics.name": searchRegex },
+      { "subjects.subtopics.description": searchRegex },
+    ];
+  }
+
+  console.log(search);
+  console.log(query);
+
+  const totalTutors = await User.countDocuments(query);
   const totalPages = Math.ceil(totalTutors / limit);
 
   if (page > totalPages) {
     return res.status(400).json({ message: "Page out of range" });
   }
 
-  const tutors = await User.find({ role: "tutor" })
+  const tutors = await User.find(query)
     .skip((page - 1) * limit)
     .limit(limit);
 
