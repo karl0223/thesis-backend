@@ -1,4 +1,5 @@
 import Report from "../models/report.js";
+import Search from "../models/search.js";
 
 // Get the analytics of report module (admin)
 const getReportsAnalytics = async (req, res) => {
@@ -36,4 +37,18 @@ const getReportsAnalytics = async (req, res) => {
   }
 };
 
-export { getReportsAnalytics };
+const getTopSearches = async (req, res) => {
+  try {
+    const topSearches = await Search.find()
+      .sort({ count: -1 })
+      .limit(10)
+      .select("-_id term count");
+
+    res.json({ topSearches });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+};
+
+export { getReportsAnalytics, getTopSearches };

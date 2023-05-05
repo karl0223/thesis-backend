@@ -22,9 +22,6 @@ const getAllTutors = async (req, res) => {
     ];
   }
 
-  console.log(search);
-  console.log(query);
-
   const totalTutors = await User.countDocuments(query);
   const totalPages = Math.ceil(totalTutors / limit);
 

@@ -1,8 +1,29 @@
 import ChatRoom from "../models/chatRoom.js";
 import Message from "../models/messages.js";
 import purify from "../utils/domPurify.js";
+import Search from "../models/search.js";
 import { getUserSocket } from "../utils/socketUtils.js";
 import { inviteUser, acceptInvitation } from "../utils/chatRoomUtils.js";
+
+function normalizeText(text) {
+  return text.toLowerCase().replace(/[^\w]+/g, "");
+}
+
+function countTerms(terms) {
+  const termCounts = {};
+
+  for (const term of terms) {
+    const normalizedTerm = normalizeText(term);
+
+    if (termCounts[normalizedTerm]) {
+      termCounts[normalizedTerm]++;
+    } else {
+      termCounts[normalizedTerm] = 1;
+    }
+  }
+
+  return termCounts;
+}
 
 // Create a new chat room and add the owner as a participant
 const createChatRoom = async (req, res) => {
@@ -189,6 +210,66 @@ const getPublicRooms = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const search = purify.sanitize(req.query.search);
+    let searchTerms = [];
+    let searchQuery = {};
+
+    if (search) {
+      // Split search terms and normalize them
+      searchTerms = search
+        .match(/[^\s"]+|"([^"]*)"/g)
+        .map((term) => normalizeText(term.replace(/"/g, "")));
+
+      // Count the terms and add them to the search term collection
+      const termCounts = countTerms(searchTerms);
+      for (const term in termCounts) {
+        await Search.updateOne(
+          { term: term },
+          { $inc: { count: termCounts[term] }, $setOnInsert: { term: term } },
+          { upsert: true }
+        );
+      }
+
+      const searchQueries = searchTerms.map((term) => ({
+        $or: [
+          { name: { $regex: term, $options: "i" } },
+          { ownerName: { $regex: term, $options: "i" } },
+          {
+            "subject.description": {
+              $regex: term,
+              $options: "i",
+            },
+          },
+          {
+            "subject.subjectCode": {
+              $regex: term,
+              $options: "i",
+            },
+          },
+          {
+            "subject.subtopics.name": {
+              $regex: term,
+              $options: "i",
+            },
+          },
+          {
+            "subject.subtopics.description": {
+              $regex: term,
+              $options: "i",
+            },
+          },
+        ],
+      }));
+
+      searchQuery =
+        searchQueries.length > 0
+          ? { $and: searchQueries }
+          : {
+              $or: [
+                { name: { $regex: normalizeText(search), $options: "i" } },
+                { ownerName: { $regex: normalizeText(search), $options: "i" } },
+              ],
+            };
+    }
 
     let aggregateQuery = [
       { $match: { status: "public", deletedAt: null } },
@@ -228,21 +309,7 @@ const getPublicRooms = async (req, res) => {
         },
       },
       {
-        $match: {
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { ownerName: { $regex: search, $options: "i" } },
-            { "subject.description": { $regex: search, $options: "i" } },
-            { "subject.subjectCode": { $regex: search, $options: "i" } },
-            { "subject.subtopics.name": { $regex: search, $options: "i" } },
-            {
-              "subject.subtopics.description": {
-                $regex: search,
-                $options: "i",
-              },
-            },
-          ],
-        },
+        $match: searchQuery,
       },
       {
         $project: {
