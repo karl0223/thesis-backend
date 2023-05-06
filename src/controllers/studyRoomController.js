@@ -1,29 +1,9 @@
 import ChatRoom from "../models/chatRoom.js";
 import Message from "../models/messages.js";
 import purify from "../utils/domPurify.js";
-import Search from "../models/search.js";
 import { getUserSocket } from "../utils/socketUtils.js";
 import { inviteUser, acceptInvitation } from "../utils/chatRoomUtils.js";
-
-function normalizeText(text) {
-  return text.toLowerCase().replace(/[^\w]+/g, "");
-}
-
-function countTerms(terms) {
-  const termCounts = {};
-
-  for (const term of terms) {
-    const normalizedTerm = normalizeText(term);
-
-    if (termCounts[normalizedTerm]) {
-      termCounts[normalizedTerm]++;
-    } else {
-      termCounts[normalizedTerm] = 1;
-    }
-  }
-
-  return termCounts;
-}
+import { normalizeText, termCounts } from "../utils/searchUtils.js";
 
 // Create a new chat room and add the owner as a participant
 const createChatRoom = async (req, res) => {
@@ -219,15 +199,7 @@ const getPublicRooms = async (req, res) => {
         .match(/[^\s"]+|"([^"]*)"/g)
         .map((term) => normalizeText(term.replace(/"/g, "")));
 
-      // Count the terms and add them to the search term collection
-      const termCounts = countTerms(searchTerms);
-      for (const term in termCounts) {
-        await Search.updateOne(
-          { term: term },
-          { $inc: { count: termCounts[term] }, $setOnInsert: { term: term } },
-          { upsert: true }
-        );
-      }
+      termCounts(searchTerms);
 
       const searchQueries = searchTerms.map((term) => ({
         $or: [
