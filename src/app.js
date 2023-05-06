@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 dotenv.config();
 import "./db/mongoose.js";
 import userRouter from "./routers/user.js";
-// import postRouter from "./routers/post.js";
 import tutorApplicationRouter from "./routers/tutorApplication.js";
 import ratingsRouter from "./routers/ratings.js";
 import reportRouter from "./routers/report.js";
@@ -12,6 +11,7 @@ import homeRouter from "./routers/home.js";
 import { socketAuth } from "./middleware/auth.js";
 import studyRoomRouter from "./routers/studyRoom.js";
 import tutorRouter from "./routers/tutorRouter.js";
+import rateRouter from "./routers/rateRouter.js";
 
 const app = express();
 
@@ -28,7 +28,6 @@ socketController(io);
 app.set("socketio", io);
 app.use(express.json());
 app.use(userRouter);
-// app.use(postRouter);
 app.use(tutorApplicationRouter);
 app.use(ratingsRouter);
 app.use(reportRouter);
@@ -36,5 +35,6 @@ app.use(analyticsRouter);
 app.use(homeRouter);
 app.use(studyRoomRouter);
 app.use(tutorRouter);
+app.use(rateRouter);
 
 export default server;
