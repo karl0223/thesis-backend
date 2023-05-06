@@ -35,6 +35,10 @@ const chatRoomSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  sessionEnded: {
+    type: Boolean,
+    default: false,
+  },
   participants: [participantSchema],
   messages: [
     {
