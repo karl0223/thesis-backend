@@ -25,15 +25,6 @@ const userSchema = new mongoose.Schema(
         }
       },
     },
-    age: {
-      type: Number,
-      default: 0,
-      validate(value) {
-        if (value < 0) {
-          throw new Error("Age must be a positive number");
-        }
-      },
-    },
     password: {
       type: String,
       required: true,
@@ -45,12 +36,6 @@ const userSchema = new mongoose.Schema(
         }
       },
     },
-    posts: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Post",
-      },
-    ],
     tokens: [
       {
         token: {
@@ -67,7 +52,7 @@ const userSchema = new mongoose.Schema(
       enum: ["tutee", "tutor", "admin"],
       default: "tutee",
     },
-    tutorRatings: [
+    ratingsAsTutor: [
       {
         value: {
           type: Number,
@@ -85,7 +70,7 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
-    tuteeRatings: [
+    ratingsAsTutee: [
       {
         value: {
           type: Number,
@@ -109,6 +94,16 @@ const userSchema = new mongoose.Schema(
     },
     timeAndDateAvailability: {
       type: String,
+    },
+    isAvailable: {
+      type: Boolean,
+      default: false,
+      validate: [
+        function (value) {
+          return this.role === "tutor" ? true : false;
+        },
+        "Only tutors are allowed to modify the availability",
+      ],
     },
     subjects: {
       type: [
@@ -182,8 +177,10 @@ userSchema.virtual("currentRoleRating").get(function () {
   return sum / ratings.length;
 });
 
-userSchema.virtual("tutorRating").get(function () {
-  const tutorRatings = this.ratings.filter((rating) => rating.role === "tutor");
+userSchema.virtual("averageRatingsAsTutor").get(function () {
+  const tutorRatings = this.ratingsAsTutor.filter(
+    (rating) => rating.role === "tutor"
+  );
   if (tutorRatings.length === 0) {
     return 0;
   }
@@ -192,8 +189,10 @@ userSchema.virtual("tutorRating").get(function () {
   return average;
 });
 
-userSchema.virtual("tuteeRating").get(function () {
-  const tuteeRatings = this.ratings.filter((rating) => rating.role === "tutee");
+userSchema.virtual("averageRatingsAsTutee").get(function () {
+  const tuteeRatings = this.ratingsAsTutee.filter(
+    (rating) => rating.role === "tutee"
+  );
   if (tuteeRatings.length === 0) {
     return 0;
   }

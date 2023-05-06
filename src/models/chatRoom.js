@@ -27,6 +27,14 @@ const chatRoomSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  location: {
+    type: String,
+    required: true,
+  },
+  schedule: {
+    type: String,
+    required: true,
+  },
   participants: [participantSchema],
   messages: [
     {
