@@ -254,7 +254,7 @@ const getPublicRooms = async (req, res) => {
     }
 
     let aggregateQuery = [
-      { $match: { status: "public", deletedAt: null } },
+      { $match: { status: "public", deletedAt: null, sessionEnded: false } },
       {
         $lookup: {
           from: "users",

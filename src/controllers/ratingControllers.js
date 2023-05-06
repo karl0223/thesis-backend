@@ -1,39 +1,93 @@
 import User from "../models/user.js";
 
-const rateUser = async (req, res) => {
+const rateParticipants = async (req, res) => {
   try {
-    const currentUser = await User.findById(req.user._id);
-    const oppositeRole = currentUser.role === "tutee" ? "tutor" : "tutee";
-    const userToRate = await User.findOne({
-      _id: req.params.id,
-      role: oppositeRole,
+    const { rating, feedback, participants } = req.body;
+    const tutorId = req.user._id;
+
+    const promises = participants.map(async (participant) => {
+      const tuteeId = participant._id;
+
+      const user = await User.findById(tuteeId);
+      if (!user) {
+        throw new Error(`User with ID ${tuteeId} not found`);
+      }
+
+      // Find the index of the tutor's rating for this tutee, if it exists
+      const tuteeRatingIndex = user.ratingsAsTutee.findIndex(
+        (rating) => rating.tutorId.toString() === tutorId.toString()
+      );
+
+      if (tuteeRatingIndex !== -1) {
+        // If there is an existing rating, update it
+        user.ratingsAsTutee[tuteeRatingIndex].value = rating;
+        user.ratingsAsTutee[tuteeRatingIndex].feedback = feedback;
+      } else {
+        // If there is no existing rating, create a new one
+        user.ratingsAsTutee.push({ value: rating, feedback, tutorId });
+      }
+
+      await user.save();
     });
 
-    if (!userToRate) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    await Promise.all(promises);
 
-    const { value, feedback } = req.body;
-    if (!value || !feedback) {
-      return res
-        .status(400)
-        .json({ message: "Value and feedback are required" });
-    }
-
-    const rating = {
-      value,
-      feedback,
-      role: oppositeRole,
-    };
-
-    userToRate.ratings.push(rating);
-    await userToRate.save();
-
-    return res.status(200).json({ message: "User rated successfully" });
+    res.status(200).send("Ratings submitted successfully");
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(400).send(error);
   }
 };
 
-export { rateUser };
+const rateTutor = async (req, res) => {
+  try {
+    const { rating, feedback, tutorId } = req.body;
+    const tuteeId = req.user._id;
+
+    const tutor = await User.findById(tutorId);
+    if (!tutor) {
+      throw new Error(`User with ID ${tutorId} not found`);
+    }
+
+    // Find the index of the tutee's rating for this tutor, if it exists
+    const tutorRatingIndex = tutor.ratingsAsTutor.findIndex(
+      (rating) => rating.tuteeId.toString() === tuteeId.toString()
+    );
+
+    if (tutorRatingIndex !== -1) {
+      // If there is an existing rating, update it
+      tutor.ratingsAsTutor[tutorRatingIndex].value = rating;
+      tutor.ratingsAsTutor[tutorRatingIndex].feedback = feedback;
+    } else {
+      // If there is no existing rating, create a new one
+      tutor.ratingsAsTutor.push({ value: rating, feedback, tuteeId });
+    }
+
+    await tutor.save();
+
+    res.status(200).send("Rating submitted successfully");
+  } catch (error) {
+    res.status(400).send(error);
+  }
+};
+
+const clearRatings = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+
+    user.ratingsAsTutor = [];
+    user.ratingsAsTutee = [];
+
+    await user.save();
+    res.send("Ratings cleared successfully");
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server Error");
+  }
+};
+
+export { rateParticipants, rateTutor, clearRatings };

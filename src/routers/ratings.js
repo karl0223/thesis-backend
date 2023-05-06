@@ -1,10 +1,17 @@
 import express from "express";
-import { rateUser } from "../controllers/ratingControllers.js";
 import { auth } from "../middleware/auth.js";
+import {
+  rateParticipants,
+  rateTutor,
+  clearRatings,
+} from "../controllers/ratingControllers.js";
 
-const ratingsRouter = express.Router();
+const ratingsRouter = new express.Router();
 
-// rate user - tutor or a tutee
-ratingsRouter.post("/api/ratings/rate/:id", auth, rateUser);
+ratingsRouter.post("/api/rate-tutor", auth, rateTutor);
+
+ratingsRouter.post("/api/rate-participants", auth, rateParticipants);
+
+ratingsRouter.post("/api/clear-ratings/:userId", auth, clearRatings);
 
 export default ratingsRouter;
