@@ -97,13 +97,7 @@ const userSchema = new mongoose.Schema(
     },
     isAvailable: {
       type: Boolean,
-      default: false,
-      validate: [
-        function (value) {
-          return this.role === "tutor" ? true : false;
-        },
-        "Only tutors are allowed to modify the availability",
-      ],
+      default: true,
     },
     subjects: {
       type: [
