@@ -78,8 +78,8 @@ const logoutAll = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .populate("tutorRatings", "value")
-      .populate("tuteeRatings", "value")
+      .populate("ratingsAsTutor", "value")
+      .populate("ratingsAsTutee", "value")
       .exec();
 
     if (!user) {
@@ -97,7 +97,7 @@ const getUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const updates = Object.keys(req.body);
-  const allowedUpdates = ["firstName", "lastName", "email", "password", "age"];
+  const allowedUpdates = ["firstName", "lastName", "email", "password"];
   const isValidOperation = updates.every((update) =>
     allowedUpdates.includes(update)
   );
