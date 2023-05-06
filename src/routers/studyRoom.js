@@ -18,6 +18,7 @@ import {
   acceptInvite,
   kickParticipant,
   kickAllParticipants,
+  sessionEnded,
 } from "../controllers/studyRoomController.js";
 
 const studyRoomRouter = express.Router();
@@ -80,5 +81,7 @@ studyRoomRouter.patch(
   auth,
   acceptUserRequest
 );
+
+studyRoomRouter.patch("/api/studyroom/end-session/:roomId", auth, sessionEnded);
 
 export default studyRoomRouter;

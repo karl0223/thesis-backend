@@ -721,6 +721,33 @@ const kickAllParticipants = async (req, res) => {
   }
 };
 
+const sessionEnded = async (req, res) => {
+  const io = req.app.get("socketio");
+  const { roomId } = req.params;
+
+  try {
+    const chatroom = await ChatRoom.findById(roomId);
+
+    if (!chatroom) {
+      return res.status(404).send("Chat room not found");
+    }
+
+    if (chatroom.owner.toString() !== req.user._id.toString()) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    chatroom.sessionEnded = true;
+
+    await chatroom.save();
+
+    io.to(roomId).emit("session-ended", { message: "Session Ended", roomId });
+    res.status(200).send("Session Ended");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+};
+
 export {
   joinRoom,
   createChatRoom,
@@ -739,4 +766,5 @@ export {
   acceptInvite,
   kickParticipant,
   kickAllParticipants,
+  sessionEnded,
 };
