@@ -1,4 +1,5 @@
 import Report from "../models/report.js";
+import User from "../models/user.js";
 import Search from "../models/search.js";
 
 // Get the analytics of report module (admin)
@@ -51,4 +52,88 @@ const getTopSearches = async (req, res) => {
   }
 };
 
-export { getReportsAnalytics, getTopSearches };
+const getAllSearchTerms = async (req, res) => {
+  try {
+    const searches = await Search.find().select("-_id term count");
+    res.json({ searches });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+};
+
+async function getMostSearchedTutorAndSubject() {
+  const searchTerms = await Search.aggregate([
+    { $group: { _id: "$term", count: { $sum: "$count" } } },
+  ]);
+
+  const topSubject = await User.aggregate([
+    { $unwind: "$subjects" },
+    {
+      $lookup: {
+        from: "searches",
+        let: { subjectCode: "$subjects.subjectCode" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$term", "$$subjectCode"] },
+            },
+          },
+          {
+            $group: {
+              _id: "$term",
+              count: { $sum: "$count" },
+            },
+          },
+        ],
+        as: "searches",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        firstName: 1,
+        lastName: 1,
+        subjectCode: "$subjects.subjectCode",
+        description: "$subjects.description",
+        subtopics: "$subjects.subtopics",
+        searchCount: { $sum: "$searches.count" },
+      },
+    },
+    { $sort: { searchCount: -1 } },
+    { $limit: 10 },
+  ]);
+
+  const topTutor = await User.aggregate([
+    {
+      $lookup: {
+        from: "searches",
+        localField: "firstName",
+        foreignField: "term",
+        as: "searches",
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        firstName: 1,
+        lastName: 1,
+        searchCount: { $sum: "$searches.count" },
+      },
+    },
+    { $sort: { searchCount: -1 } },
+    { $limit: 10 },
+  ]);
+
+  return {
+    topSubject: topSubject,
+    topTutor: topTutor,
+  };
+}
+
+export {
+  getReportsAnalytics,
+  getTopSearches,
+  getAllSearchTerms,
+  getMostSearchedTutorAndSubject,
+};
