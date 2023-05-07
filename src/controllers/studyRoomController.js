@@ -278,19 +278,6 @@ const getPublicRooms = async (req, res) => {
         },
       },
       {
-        $lookup: {
-          from: "participants",
-          localField: "_id",
-          foreignField: "chatroom",
-          as: "participants",
-        },
-      },
-      {
-        $addFields: {
-          participantCount: { $size: "$participants" },
-        },
-      },
-      {
         $match: searchQuery,
       },
       {
@@ -300,7 +287,8 @@ const getPublicRooms = async (req, res) => {
           owner: { $concat: ["$owner.firstName", " ", "$owner.lastName"] },
           subject: 1,
           participants: 1,
-          participantCount: 1,
+          schedule: 1,
+          location: 1,
         },
       },
       {
