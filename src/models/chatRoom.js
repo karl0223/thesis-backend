@@ -235,9 +235,8 @@ chatRoomSchema.pre(["find", "findById", "findOne"], function (next) {
   if (Object.keys(this._conditions).includes("deletedAt")) {
     next();
   } else {
-    // Apply the `deletedAt` and `sessionEnded` condition to filter out soft deleted rooms
+    // Apply the `deletedAt` condition to filter out soft deleted rooms
     this.where("deletedAt").equals(null);
-    this.where("sessionEnded").equals(false);
     next();
   }
 });
