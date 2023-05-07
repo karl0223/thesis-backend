@@ -12,6 +12,9 @@ import studyRoomRouter from "./routers/studyRoom.js";
 import tutorRouter from "./routers/tutorRouter.js";
 import ratingsRouter from "./routers/ratings.js";
 
+import hbs from "hbs";
+import path from "path";
+
 const app = express();
 
 import http from "http";
@@ -23,6 +26,14 @@ const io = new Server(server);
 import socketController from "./controllers/socketControllers.js";
 io.use(socketAuth);
 socketController(io);
+
+const __dirname = path.resolve();
+const viewsPath = path.join(__dirname, "templates", "views");
+const partialsPath = path.join(__dirname, "templates", "partials");
+
+app.set("view engine", "hbs");
+app.set("views", viewsPath);
+hbs.registerPartials(partialsPath);
 
 app.set("socketio", io);
 app.use(express.json());

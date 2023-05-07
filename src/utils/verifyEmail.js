@@ -1,0 +1,148 @@
+import nodemailer from "nodemailer";
+import crypto from "crypto";
+import User from "../models/user.js";
+
+// Create a Nodemailer transporter with your SMTP settings
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: true,
+  auth: {
+    user: process.env.GMAIL_EMAIL,
+    pass: process.env.GMAIL_PASSWORD,
+  },
+});
+
+// Generate a verification token using a random 32-byte string
+function generateVerificationToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+// Send a verification email to the user
+async function sendVerificationEmail(user) {
+  const verificationToken = generateVerificationToken();
+  user.verificationToken = verificationToken;
+  await user.save();
+
+  const verificationUrl = `
+  https://localhost:3000/api/users/verify?verificationToken=${verificationToken}`;
+
+  const mailOptions = {
+    from: "noreply@example.com",
+    to: user.email,
+    subject: "Please verify your email address",
+    html: `
+      <div style="max-width: 600px; margin: auto;">
+        <div style="background-color: #f2f2f2; padding: 20px; text-align: center;">
+          <h1>Welcome to Lift App</h1>
+          <p>Please click the button below to verify your email address:</p>
+          <div style="margin-top: 20px;">
+            <a href="${verificationUrl}" style="background-color: #008CBA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Verify Email Address</a>
+          </div>
+        </div>
+      </div>
+    `,
+  };
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+      return true;
+    } else {
+      console.log("Email sent: " + info.response);
+      return false;
+    }
+  });
+}
+
+const verifyEmail = async (req, res) => {
+  try {
+    const user = await User.findOne({
+      verificationToken: req.query.verificationToken,
+      isEmailVerified: false,
+    });
+
+    if (!user) {
+      return res.status(404).render("error", {
+        message: "Invalid verification token",
+      });
+    }
+
+    user.isEmailVerified = true;
+    user.verificationToken = null;
+    await user.save();
+
+    res.render("verifyEmail", {
+      username: `${user.firstName} ${user.lastName}`,
+      appName: "Lift App",
+    });
+  } catch (e) {
+    res.status(500).render("error", { message: e.message });
+  }
+};
+
+export { sendVerificationEmail, verifyEmail };
+
+// USING MAILGUN
+
+// import crypto from "crypto";
+// import User from "../models/user.js";
+// import Mailgun from "mailgun.js";
+// import formData from "form-data";
+
+// const mailgun = new Mailgun(formData);
+
+// // Create a new Mailgun instance with your API key and domain
+// const mg = mailgun.client({
+//   username: "api",
+//   key: process.env.MAILGUN_API_KEY || "key-yourkeyhere",
+// });
+
+// // Generate a verification token using a random 32-byte string
+// function generateVerificationToken() {
+//   return crypto.randomBytes(32).toString("hex");
+// }
+
+// // Send a verification email to the user
+// async function sendVerificationEmail(user) {
+//   const verificationToken = generateVerificationToken();
+//   user.verificationToken = verificationToken;
+//   await user.save();
+
+//   const verificationUrl = `
+//   https://localhost:3000/api/users/verify?verificationToken=${verificationToken}`;
+
+//   const data = {
+//     from: "noreply@example.com",
+//     to: user.email,
+//     subject: "Please verify your email address",
+//     html: `Click <a href="${verificationUrl}">here</a> to verify your email address.`,
+//   };
+
+//   mg.messages
+//     .create(process.env.MAILGUN_DOMAIN, data)
+//     .then((msg) => console.log(msg)) // logs response data
+//     .catch((err) => console.error(err)); // logs any error
+// }
+
+// // Verify the user's email address
+// async function verifyEmail(req, res) {
+//   const { verificationToken } = req.query;
+
+//   const user = await User.findOne({ verificationToken });
+
+//   if (!user) {
+//     return res.status(400).send("Invalid verification token");
+//   }
+
+//   const token = await user.generateAuthToken();
+
+//   user.isEmailVerified = true;
+//   user.verificationToken = null;
+//   await user.save();
+
+//   return res.redirect("/verified");
+// }
+
+// export { sendVerificationEmail, verifyEmail };

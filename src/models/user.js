@@ -143,6 +143,17 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+    },
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

@@ -13,10 +13,15 @@ import {
   deleteUser,
 } from "../controllers/userControllers.js";
 
+import { verifyEmail } from "../utils/verifyEmail.js";
+
 const userRouter = express.Router();
 
 // sign up
 userRouter.post("/api/users/signup", signup);
+
+// verify email
+userRouter.get("/api/users/verify", verifyEmail);
 
 // user login
 userRouter.post("/api/users/login", login);

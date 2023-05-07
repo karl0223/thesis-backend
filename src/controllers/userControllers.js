@@ -1,4 +1,5 @@
 import User from "../models/user.js";
+import { sendVerificationEmail } from "../utils/verifyEmail.js";
 
 const signup = async (req, res) => {
   const user = new User(req.body);
@@ -7,8 +8,9 @@ const signup = async (req, res) => {
   try {
     user.devices = [{ deviceToken, fcmToken }];
     await user.save();
-    const token = await user.generateAuthToken();
-    res.status(201).send({ user, token });
+    await sendVerificationEmail(user);
+
+    res.status(201).send({ user });
   } catch (e) {
     res.status(400).send(e);
   }
@@ -33,6 +35,11 @@ const login = async (req, res) => {
     }
 
     await user.save();
+
+    if (!user.isEmailVerified) {
+      return res.send({ message: "Please verify your email address" });
+    }
+
     const token = await user.generateAuthToken();
 
     res.send({ user, token });
