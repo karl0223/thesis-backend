@@ -131,24 +131,27 @@ const leaveChatRoom = async (req, res) => {
         .send("You are not a participant of this chat room");
     }
 
-    if (chatRoom.owner.toString() === userId.toString()) {
-      if (chatRoom.sessionEnded !== true) {
-        // Soft delete the chat room if the user is the owner
-        chatRoom.deletedAt = new Date();
-        await chatRoom.save();
+    if (
+      chatRoom.owner.toString() === userId.toString() &&
+      !chatRoom.sessionEnded
+    ) {
+      // Soft delete the chat room if the user is the owner
+      chatRoom.deletedAt = new Date();
+      await chatRoom.save();
 
-        const participantsToKick = chatRoom.participants;
-        // Kick each participant
-        for (const participant of participantsToKick) {
-          await ChatRoom.updateOne(
-            { _id: roomId },
-            { $pull: { participants: { userId: participant.userId._id } } }
-          );
-        }
-        //after kicking all participant, emit event to all participant to delete the room
-        io.to(roomId).emit("room-deleted", { roomId });
-        res.send();
+      const participantsToKick = chatRoom.participants;
+      // Kick each participant
+      for (const participant of participantsToKick) {
+        await ChatRoom.updateOne(
+          { _id: roomId },
+          { $pull: { participants: { userId: participant.userId._id } } }
+        );
       }
+
+      //after kicking all participant, emit event to all participant to delete the room
+      io.to(roomId).emit("room-deleted", { roomId });
+
+      res.send();
     } else {
       await ChatRoom.removeParticipant(roomId, userId);
       // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
