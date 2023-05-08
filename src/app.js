@@ -11,6 +11,7 @@ import { socketAuth } from "./middleware/auth.js";
 import studyRoomRouter from "./routers/studyRoom.js";
 import tutorRouter from "./routers/tutorRouter.js";
 import ratingsRouter from "./routers/ratings.js";
+import helpRequestRouter from "./routers/askHelp.js";
 
 import hbs from "hbs";
 import path from "path";
@@ -45,5 +46,6 @@ app.use(homeRouter);
 app.use(studyRoomRouter);
 app.use(tutorRouter);
 app.use(ratingsRouter);
+app.use(helpRequestRouter);
 
 export default server;
