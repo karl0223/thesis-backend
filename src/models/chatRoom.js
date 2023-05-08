@@ -217,6 +217,9 @@ chatRoomSchema.statics.removeParticipant = async function (roomId, userId) {
     throw new Error("User not a participant in the chat room");
   }
   chatRoom.participants.splice(index, 1);
+  if (chatRoom.participants.length === 0) {
+    chatRoom.deletedAt = new Date();
+  }
   await chatRoom.save();
 };
 

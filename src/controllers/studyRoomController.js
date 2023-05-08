@@ -132,29 +132,23 @@ const leaveChatRoom = async (req, res) => {
     }
 
     if (chatRoom.owner.toString() === userId.toString()) {
-      // Soft delete the chat room if the user is the owner
-      chatRoom.deletedAt = new Date();
-      await chatRoom.save();
+      if (chatRoom.sessionEnded !== true) {
+        // Soft delete the chat room if the user is the owner
+        chatRoom.deletedAt = new Date();
+        await chatRoom.save();
 
-      const participantsToKick = chatRoom.participants;
-      // Kick each participant
-      for (const participant of participantsToKick) {
-        await ChatRoom.updateOne(
-          { _id: roomId },
-          { $pull: { participants: { userId: participant.userId._id } } }
-        );
-
-        // Emit a "participant-kicked" event to the participant's socket
-        // const participantSocketId = await getUserSocket(participant.userId._id);
-        // if (participantSocketId) {
-        //   io.to(participantSocketId).emit("participant-kicked", { roomId });
-        // }
+        const participantsToKick = chatRoom.participants;
+        // Kick each participant
+        for (const participant of participantsToKick) {
+          await ChatRoom.updateOne(
+            { _id: roomId },
+            { $pull: { participants: { userId: participant.userId._id } } }
+          );
+        }
+        //after kicking all participant, emit event to all participant to delete the room
+        io.to(roomId).emit("room-deleted", { roomId });
+        res.send();
       }
-
-      //after kicking all participant, emit event to all participant to delete the room
-      io.to(roomId).emit("room-deleted", { roomId });
-
-      res.send();
     } else {
       await ChatRoom.removeParticipant(roomId, userId);
       // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
