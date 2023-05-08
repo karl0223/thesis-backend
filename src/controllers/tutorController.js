@@ -25,4 +25,54 @@ const addSubject = async (req, res) => {
   }
 };
 
-export { addSubject };
+// Update subject by subject code
+const updateSubject = async (req, res) => {
+  const { subjectCode } = req.params;
+  const { description, subtopics } = req.body;
+  try {
+    const user = await User.findOneAndUpdate(
+      {
+        _id: req.user._id,
+        "subjects.subjectCode": subjectCode,
+      },
+      {
+        $set: {
+          "subjects.$.description": description,
+          "subjects.$.subtopics": subtopics,
+        },
+      }
+    );
+    if (!user) {
+      return res.status(404).send({ error: "Subject not found" });
+    }
+    res.send({ message: "Subject updated successfully" });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
+
+// Delete subject by subject code
+const deleteSubject = async (req, res) => {
+  const { subjectCode } = req.params;
+  try {
+    const user = await User.findOneAndUpdate(
+      {
+        _id: req.user._id,
+        "subjects.subjectCode": subjectCode,
+      },
+      {
+        $pull: {
+          subjects: { subjectCode: subjectCode },
+        },
+      }
+    );
+    if (!user) {
+      return res.status(404).send({ error: "Subject not found" });
+    }
+    res.send({ message: "Subject deleted successfully" });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
+
+export { addSubject, updateSubject, deleteSubject };
