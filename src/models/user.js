@@ -168,6 +168,7 @@ userSchema.methods.toJSON = function () {
   delete userObject.tokens;
   delete userObject.avatar;
   delete userObject.devices;
+  delete userObject.verificationToken;
 
   return userObject;
 };

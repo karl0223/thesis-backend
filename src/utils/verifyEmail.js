@@ -26,7 +26,7 @@ async function sendVerificationEmail(user) {
   await user.save();
 
   const verificationUrl = `
-  https://localhost:3000/api/users/verify?verificationToken=${verificationToken}`;
+  http://localhost:3000/api/users/verify?verificationToken=${verificationToken}`;
 
   const mailOptions = {
     from: "noreply@example.com",
