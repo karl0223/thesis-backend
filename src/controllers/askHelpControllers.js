@@ -210,7 +210,9 @@ const myRequests = async (req, res) => {
     const request = await HelpRequest.find({
       studentId: req.user._id,
       reqStatus: "pending",
-    }).populate("tutorId", "firstName lastName");
+    })
+      .populate("tutorId", "firstName lastName")
+      .populate("studentId", "firstName lastName");
 
     res.send(request);
   } catch (err) {
