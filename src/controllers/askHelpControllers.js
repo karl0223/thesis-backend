@@ -193,8 +193,11 @@ const acceptRequest = async (req, res) => {
         "firstName lastName"
       );
 
-      io.to(tuteeSocket).emit("request-accepted", updatedChatRoom);
-      res.send(updatedChatRoom);
+      io.to(tuteeSocket).emit("request-accepted", {
+        chatroom: updatedChatRoom,
+        request: helpRequest,
+      });
+      res.send({ chatroom: updatedChatRoom, request: helpRequest });
     } else {
       io.to(tuteeSocket).emit("request-rejected", helpRequest);
       res.send(helpRequest);
