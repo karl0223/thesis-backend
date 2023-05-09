@@ -74,10 +74,9 @@ const createRequest = async (req, res) => {
       reqStatus: "pending",
     });
 
-    const requestInfo = await HelpRequest.findById(newRequest._id).populate(
-      "studentId",
-      " firstName lastName"
-    );
+    const requestInfo = await HelpRequest.findById(newRequest._id)
+      .populate("tutorId", "firstName lastName")
+      .populate("studentId", " firstName lastName");
 
     io.to(tutorSocket).emit("new-request", requestInfo);
     res.send(requestInfo);
@@ -119,9 +118,11 @@ const acceptRequest = async (req, res) => {
 
     const { requestId, reqStatus } = req.params;
 
-    const helpRequest = await HelpRequest.findById(requestId);
+    const helpRequest = await HelpRequest.findById(requestId)
+      .populate("tutorId", "firstName lastName")
+      .populate("studentId", "firstName lastName");
 
-    const tuteeSocket = await getUserSocket(helpRequest.studentId);
+    const tuteeSocket = await getUserSocket(helpRequest.studentId._id);
 
     const existingChatRoom = await ChatRoom.findOne({
       $or: [
@@ -133,7 +134,7 @@ const acceptRequest = async (req, res) => {
         },
         {
           participants: {
-            $elemMatch: { userId: helpRequest.studentId },
+            $elemMatch: { userId: helpRequest.studentId._id },
           },
         },
       ],
@@ -171,7 +172,7 @@ const acceptRequest = async (req, res) => {
       await ChatRoom.addParticipant(chatRoom._id, req.user._id, "owner");
       await ChatRoom.addParticipant(
         chatRoom._id,
-        helpRequest.studentId,
+        helpRequest.studentId._id,
         "accepted"
       );
 
@@ -179,10 +180,10 @@ const acceptRequest = async (req, res) => {
       const userRooms = await ChatRoom.getUserRooms(helpRequest.studentId);
       for (const room of userRooms) {
         if (room._id.toString() !== chatRoom._id.toString()) {
-          await ChatRoom.cancelParticipant(room._id, helpRequest.studentId);
+          await ChatRoom.cancelParticipant(room._id, helpRequest.studentId._id);
           io.to(room._id).emit("participant-cancelled", {
             roomId: room._id,
-            userId: helpRequest.studentId,
+            userId: helpRequest.studentId._id,
           });
         }
       }
