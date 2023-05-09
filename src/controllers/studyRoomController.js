@@ -65,7 +65,7 @@ const joinRoom = async (req, res) => {
       // Cancel other rooms where the user is a participant
       const userRooms = await ChatRoom.getUserRooms(userId);
       for (const room of userRooms) {
-        if (room._id !== roomId) {
+        if (room._id.toString() !== chatRoom._id.toString()) {
           await ChatRoom.cancelParticipant(room._id, userId);
           io.to(room._id).emit("participant-cancelled", {
             roomId: room._id,

@@ -173,7 +173,7 @@ const acceptRequest = async (req, res) => {
       // Cancel other rooms where the user is a participant
       const userRooms = await ChatRoom.getUserRooms(helpRequest.studentId);
       for (const room of userRooms) {
-        if (room._id !== chatRoom._id) {
+        if (room._id.toString() !== chatRoom._id.toString()) {
           await ChatRoom.cancelParticipant(room._id, helpRequest.studentId);
           io.to(room._id).emit("participant-cancelled", {
             roomId: room._id,
@@ -182,8 +182,13 @@ const acceptRequest = async (req, res) => {
         }
       }
 
-      io.to(tuteeSocket).emit("request-accepted", chatRoom);
-      res.send(chatRoom);
+      const updatedChatRoom = await ChatRoom.findById(chatRoom._id).populate(
+        "participants.userId",
+        "firstName lastName"
+      );
+
+      io.to(tuteeSocket).emit("request-accepted", updatedChatRoom);
+      res.send(updatedChatRoom);
     } else {
       io.to(tuteeSocket).emit("request-rejected", helpRequest);
       res.send(helpRequest);
