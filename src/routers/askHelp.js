@@ -5,6 +5,7 @@ import {
   myRequests,
   getRequests,
   acceptRequest,
+  deleteRequest,
 } from "../controllers/askHelpControllers.js";
 
 const helpRequestRouter = express.Router();
@@ -19,6 +20,12 @@ helpRequestRouter.post(
   "/api/ask-help/accept-request/:requestId/:reqStatus",
   auth,
   acceptRequest
+);
+
+helpRequestRouter.delete(
+  "/api/ask-help/delete-request/:requestId",
+  auth,
+  deleteRequest
 );
 
 export default helpRequestRouter;

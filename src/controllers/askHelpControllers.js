@@ -74,8 +74,13 @@ const createRequest = async (req, res) => {
       reqStatus: "pending",
     });
 
-    io.to(tutorSocket).emit("new-request", newRequest);
-    res.send(newRequest);
+    const requestInfo = await HelpRequest.findById(newRequest._id).populate(
+      "studentId",
+      " firstName lastName"
+    );
+
+    io.to(tutorSocket).emit("new-request", requestInfo);
+    res.send(requestInfo);
   } catch (err) {
     console.error(err);
     res.status(500).send("Error creating help request");
@@ -213,4 +218,27 @@ const myRequests = async (req, res) => {
   }
 };
 
-export { createRequest, myRequests, getRequests, acceptRequest };
+const deleteRequest = async (req, res) => {
+  const { requestId } = req.params;
+
+  try {
+    const helpRequest = await HelpRequest.findById(requestId);
+
+    if (!helpRequest) {
+      return res.status(404).send("Help request not found");
+    }
+
+    if (helpRequest.studentId.toString() !== req.user._id.toString()) {
+      return res.status(401).send("You are not authorized to remove this");
+    }
+
+    await helpRequest.remove();
+
+    res.send("Help request deleted successfully");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error deleting help request");
+  }
+};
+
+export { createRequest, myRequests, getRequests, acceptRequest, deleteRequest };
