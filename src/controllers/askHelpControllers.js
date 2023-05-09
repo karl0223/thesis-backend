@@ -1,7 +1,10 @@
 import HelpRequest from "../models/askHelp.js";
 import ChatRoom from "../models/chatRoom.js";
+import { getUserSocket } from "../utils/socketUtils.js";
 
 const createRequest = async (req, res) => {
+  const io = req.app.get("socketio");
+
   try {
     const {
       name,
@@ -54,6 +57,8 @@ const createRequest = async (req, res) => {
       return res.status(400).send("You still have an existing chatroom");
     }
 
+    const tutorSocket = await getUserSocket(tutorId);
+
     const newRequest = await HelpRequest.create({
       tutorId,
       studentId: req.user._id,
@@ -69,6 +74,7 @@ const createRequest = async (req, res) => {
       reqStatus: "pending",
     });
 
+    io.to(tutorSocket).emit("new-request", newRequest);
     res.send(newRequest);
   } catch (err) {
     console.error(err);
@@ -97,6 +103,8 @@ const getRequests = async (req, res) => {
 };
 
 const acceptRequest = async (req, res) => {
+  const io = req.app.get("socketio");
+
   try {
     if (!req.user || req.user.role !== "tutor") {
       return res
@@ -107,6 +115,8 @@ const acceptRequest = async (req, res) => {
     const { requestId, reqStatus } = req.params;
 
     const helpRequest = await HelpRequest.findById(requestId);
+
+    const tuteeSocket = await getUserSocket(helpRequest.studentId);
 
     const existingChatRoom = await ChatRoom.findOne({
       $or: [
@@ -159,8 +169,23 @@ const acceptRequest = async (req, res) => {
         helpRequest.studentId,
         "accepted"
       );
+
+      // Cancel other rooms where the user is a participant
+      const userRooms = await ChatRoom.getUserRooms(helpRequest.studentId);
+      for (const room of userRooms) {
+        if (room._id !== chatRoom._id) {
+          await ChatRoom.cancelParticipant(room._id, helpRequest.studentId);
+          io.to(room._id).emit("participant-cancelled", {
+            roomId: room._id,
+            userId: helpRequest.studentId,
+          });
+        }
+      }
+
+      io.to(tuteeSocket).emit("request-accepted", chatRoom);
       res.send(chatRoom);
     } else {
+      io.to(tuteeSocket).emit("request-rejected", helpRequest);
       res.send(helpRequest);
     }
   } catch (err) {
