@@ -3,7 +3,7 @@ import User from "../models/user.js";
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header("Authorization").replace("Bearer ", "");
+    const token = req.cookies.access_token || req.header("Authorization").replace("Bearer ", "");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({
       _id: decoded._id,
@@ -47,7 +47,6 @@ const isAdmin = (req, res, next) => {
   if (req.user.role !== "admin") {
     return res.status(403).send({ error: "Access denied." });
   }
-
   next();
 };
 
