@@ -5,7 +5,7 @@ import {
   getTopSearches,
   getAllSearchTerms,
   getMostSearchedTutorAndSubject,
-} from "../../controllers/admin-controllers/analyticsControllers.js";
+} from "../../controllers/analyticsControllers.js";
 
 const analyticsRouter = express.Router();
 
@@ -25,7 +25,7 @@ analyticsRouter.get(
   async (req, res) => {
     try {
       const result = await getMostSearchedTutorAndSubject();
-      res.status(200).json(result);
+      res.render("analytics", { result });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Internal server error" });

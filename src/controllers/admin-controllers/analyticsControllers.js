@@ -1,6 +1,6 @@
-import Report from "../../models/report.js";
-import User from "../../models/user.js";
-import Search from "../../models/search.js";
+import Report from "../models/report.js";
+import User from "../models/user.js";
+import Search from "../models/search.js";
 
 // Get the analytics of report module (admin)
 const getReportsAnalytics = async (req, res) => {
