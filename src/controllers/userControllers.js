@@ -126,6 +126,20 @@ const updateUser = async (req, res) => {
   }
 };
 
+const uploadProfilePicture = async (req, res) => {
+  const { image } = req.body;
+  try {
+    const user = await User.findById(req.user._id);
+    user.avatar = image;
+    await user.save();
+
+    res.send(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send();
+  }
+};
+
 const deleteUser = async (req, res) => {
   try {
     await req.user.remove();
@@ -135,4 +149,13 @@ const deleteUser = async (req, res) => {
   }
 };
 
-export { signup, login, logout, logoutAll, getUser, updateUser, deleteUser };
+export {
+  signup,
+  login,
+  logout,
+  logoutAll,
+  getUser,
+  updateUser,
+  uploadProfilePicture,
+  deleteUser,
+};

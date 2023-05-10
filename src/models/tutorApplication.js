@@ -7,8 +7,7 @@ const tutorApplicationSchema = new mongoose.Schema({
     required: true,
   },
   grades: {
-    data: Buffer,
-    contentType: String,
+    type: String,
   },
   briefIntro: {
     type: String,
