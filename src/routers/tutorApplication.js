@@ -23,18 +23,6 @@ const tutorApplicationRouter = express.Router();
 // delete user's application if rejected -- DONE
 // create check application route
 
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  fileFilter(req, file, cb) {
-    if (!file.originalname.match(/\.(png|jpg|jpeg)$/)) {
-      return cb(new Error("Please upload an image"));
-    }
-
-    cb(undefined, true);
-  },
-});
-
 // change tutor role to tutee - for testing
 tutorApplicationRouter.patch(
   "/api/tutor-application/change-role",
@@ -84,7 +72,6 @@ tutorApplicationRouter.delete(
 tutorApplicationRouter.post(
   "/api/tutor-application/create",
   auth,
-  upload.single("grades"),
   createTutorApplication
 );
 
@@ -92,7 +79,6 @@ tutorApplicationRouter.post(
 tutorApplicationRouter.patch(
   "/api/tutor-application/update",
   auth,
-  upload.single("grades"),
   updateTutorApplication
 );
 

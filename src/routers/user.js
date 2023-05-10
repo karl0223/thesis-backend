@@ -10,6 +10,7 @@ import {
   logoutAll,
   getUser,
   updateUser,
+  uploadProfilePicture,
   deleteUser,
 } from "../controllers/userControllers.js";
 
@@ -41,37 +42,8 @@ userRouter.patch("/api/users/me", auth, updateUser);
 // Delete user
 userRouter.delete("/api/users/delete", auth, deleteUser);
 
-const upload = multer({
-  limits: {
-    fileSize: 1000000,
-  },
-  fileFilter(req, file, cb) {
-    if (!file.originalname.match(/\.(png|jpg|jpeg)$/)) {
-      return cb(new Error("Please upload an image"));
-    }
-
-    cb(undefined, true);
-  },
-});
-
 // upload user avatar
-userRouter.post(
-  "/api/users/me/avatar",
-  auth,
-  upload.single("avatar"),
-  async (req, res) => {
-    const buffer = await sharp(req.file.buffer)
-      .resize({ width: 250, height: 250 })
-      .png()
-      .toBuffer();
-    req.user.avatar = buffer;
-    await req.user.save();
-    res.send();
-  },
-  (error, req, res, next) => {
-    res.status(400).send({ error: error.message });
-  }
-);
+userRouter.post("/api/users/me/avatar", auth, uploadProfilePicture);
 
 // Delete user avatar
 userRouter.delete("/api/users/me/avatar", auth, async (req, res) => {
@@ -86,13 +58,13 @@ userRouter.get("/api/users/:id/avatar", async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user || !user.avatar) {
-      throw new Error();
+      return res.status(404).send("No user or user avatar found");
     }
 
-    res.set("Content-Type", "image/png");
     res.send(user.avatar);
   } catch (e) {
-    res.status(404).send();
+    console.error(e);
+    res.status(500).send("Server Error");
   }
 });
 

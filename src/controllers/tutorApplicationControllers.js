@@ -73,7 +73,7 @@ const getTutorApplicationById = async (req, res) => {
 };
 
 const createTutorApplication = async (req, res) => {
-  const { briefIntro, teachingExperience } = req.body;
+  const { image, briefIntro, teachingExperience } = req.body;
 
   try {
     // check if the user has sent an application
@@ -87,10 +87,7 @@ const createTutorApplication = async (req, res) => {
 
     const tutorApplication = new TutorApplication({
       userId: req.user._id,
-      grades: {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
-      },
+      grades: image,
       briefIntro,
       teachingExperience,
     });
@@ -105,7 +102,7 @@ const createTutorApplication = async (req, res) => {
 };
 
 const updateTutorApplication = async (req, res) => {
-  const { briefIntro, teachingExperience } = req.body;
+  const { image, briefIntro, teachingExperience } = req.body;
 
   try {
     // Find the TutorApplication document to be updated
@@ -118,10 +115,7 @@ const updateTutorApplication = async (req, res) => {
     }
 
     // Update the grades field with the new data
-    tutorApplication.grades = {
-      data: req.file.buffer,
-      contentType: req.file.mimetype,
-    };
+    tutorApplication.grades = image;
 
     // Update the other fields
     tutorApplication.briefIntro = briefIntro;
@@ -210,8 +204,7 @@ const getUploadedImage = async (req, res) => {
       return res.status(404).send("Tutor application not found.");
     }
 
-    res.set("Content-Type", tutorApplication.grades.contentType);
-    res.send(tutorApplication.grades.data);
+    res.send(tutorApplication.grades);
   } catch (error) {
     console.error(error);
     res.status(500).send("Server Error");
