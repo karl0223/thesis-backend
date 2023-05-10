@@ -1,11 +1,11 @@
 import express from "express";
-import { auth, authAdmin } from "../middleware/auth.js";
+import { authAdmin } from "../../middleware/auth.js";
 import {
   getReportsAnalytics,
   getTopSearches,
   getAllSearchTerms,
   getMostSearchedTutorAndSubject,
-} from "../controllers/analyticsControllers.js";
+} from "../../controllers/admin-controllers/analyticsControllers.js";
 
 const analyticsRouter = express.Router();
 

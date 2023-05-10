@@ -1,4 +1,4 @@
-import Report from "../models/report.js";
+import Report from "../../models/report.js";
 
 // Get all reports (admin)
 const getAllReports = async (req, res) => {
