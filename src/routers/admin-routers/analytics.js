@@ -5,9 +5,16 @@ import {
   getTopSearches,
   getAllSearchTerms,
   getMostSearchedTutorAndSubject,
-} from "../../controllers/analyticsControllers.js";
+} from "../../controllers/admin-controllers/analyticsControllers.js";
 
 const analyticsRouter = express.Router();
+
+analyticsRouter.get("/admin/analytics", authAdmin, (req, res) => {
+  // shows the UI then pass all the values here to show the charts
+  res.render("analytics", {} /*, { values }*/);
+
+  //sample: res.render("analytics", { mostSearch, topSearch, allSearch });
+});
 
 // Get the analytics of report module
 analyticsRouter.get("/api/analytics/reports", authAdmin, getReportsAnalytics);

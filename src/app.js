@@ -15,6 +15,7 @@ import tutorRouter from "./routers/tutorRouter.js";
 import ratingsRouter from "./routers/ratings.js";
 import helpRequestRouter from "./routers/askHelp.js";
 import indexRouter from "./routers/admin-routers/index.js";
+import analyticsRouter from "./routers/admin-routers/analytics.js";
 
 import hbs from "hbs";
 import path from "path";
@@ -55,5 +56,7 @@ app.use(tutorRouter);
 app.use(ratingsRouter);
 app.use(helpRequestRouter);
 app.use(indexRouter);
+app.use(analyticsRouter);
+
 
 export default server;
