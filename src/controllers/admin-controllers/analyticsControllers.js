@@ -44,8 +44,10 @@ const getTopSearches = async (req, res) => {
       .sort({ count: -1 })
       .limit(10)
       .select("-_id term count");
-
-    res.json({ topSearches });
+      
+    console.log("topSearches", topSearches);
+    console.log(topSearches);
+    return topSearches;
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");

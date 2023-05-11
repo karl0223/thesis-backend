@@ -8,7 +8,7 @@
                 <div class="card h-100">
                     <div class="card-header">
                         <span class="me-2"><i class="bi bi-bar-chart-fill"></i></span>
-                        Area Chart Example
+                        Top Searches
                     </div>
                     <div class="card-body">
                         <canvas class="chart" width="400" height="200"></canvas>
@@ -30,25 +30,29 @@
     </div>
 </main>
 
-
+<script src="/js/bootstrap.bundle.min.js"></script>
+<script src="/js/jquery-3.5.1.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.0.2/dist/chart.min.js"></script>
 <script src="/js/jquery.dataTables.min.js"></script>
 <script src="/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    // chart data
+
+    var raw = '{{topSearches}}';
+    var topsearches = JSON.parse(raw.replace(/&quot;/g, '"'));
+
     const charts = document.querySelectorAll(".chart");
 
-    charts.forEach(function (chart) {
-        var ctx = chart.getContext("2d");
+    for (var i = 0; i < charts.length; i++) {
+        var ctx = charts[i].getContext("2d");
         var myChart = new Chart(ctx, {
             type: "bar",
             data: {
-                labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+                labels: topsearches.map((tps) => tps.term),
                 datasets: [
                     {
-                        label: "# of Votes",
-                        data: [12, 19, 3, 5, 2, 3], // replace with dynamic data
+                        label: "# of searches",
+                        data:  topsearches.map((tps) => tps.count), // replace with dynamic data
                         backgroundColor: [
                             "rgba(255, 99, 132, 0.2)",
                             "rgba(54, 162, 235, 0.2)",
@@ -77,7 +81,8 @@
                 },
             },
         });
-    });
+    }
+
 
     $(document).ready(function () {
         $(".data-table").each(function (_, table) {

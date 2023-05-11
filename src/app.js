@@ -36,7 +36,7 @@ const __dirname = path.resolve();
 const viewsPath = path.join(__dirname, "templates", "views");
 const partialsPath = path.join(__dirname, "templates", "partials");
 
-app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(cookieParser());
 
 app.set("view engine", "hbs");

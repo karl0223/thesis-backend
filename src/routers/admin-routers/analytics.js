@@ -9,9 +9,18 @@ import {
 
 const analyticsRouter = express.Router();
 
-analyticsRouter.get("/admin/analytics", authAdmin, (req, res) => {
+analyticsRouter.get("/admin/analytics", authAdmin, async (req, res) => {
   // shows the UI then pass all the values here to show the charts
-  res.render("analytics", {} /*, { values }*/);
+
+  //console.log("getReportsAnalytics", getReportsAnalytics);
+  var topSearches = await getTopSearches();
+
+  const context = {
+    topSearches: JSON.stringify(topSearches)
+  };
+  console.log("context", context);
+
+  res.render("analytics", context);
 
   //sample: res.render("analytics", { mostSearch, topSearch, allSearch });
 });
