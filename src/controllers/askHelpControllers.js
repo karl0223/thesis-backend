@@ -1,4 +1,5 @@
 import HelpRequest from "../models/askHelp.js";
+import User from "../models/user.js";
 import ChatRoom from "../models/chatRoom.js";
 import { getUserSocket } from "../utils/socketUtils.js";
 
