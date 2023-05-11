@@ -4,7 +4,7 @@ import Report from "../../models/report.js";
 const getAllReports = async (req, res) => {
   try {
     const reports = await Report.find();
-    res.render("reports", { reports });
+    res.status(200).json(reports);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

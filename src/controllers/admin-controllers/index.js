@@ -40,6 +40,8 @@ const loginFunction = async (req, res) => {
 
     await user.save();
 
+    
+
     const token = await user.generateAuthToken();
     res.cookie("access_token", token, {
       httpOnly: true,
