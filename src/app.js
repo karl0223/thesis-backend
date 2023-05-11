@@ -16,6 +16,7 @@ import ratingsRouter from "./routers/ratings.js";
 import helpRequestRouter from "./routers/askHelp.js";
 import indexRouter from "./routers/admin-routers/index.js";
 import analyticsRouter from "./routers/admin-routers/analytics.js";
+import reportRouter from "./routers/admin-routers/report.js";
 
 import hbs from "hbs";
 import path from "path";
@@ -36,7 +37,7 @@ const __dirname = path.resolve();
 const viewsPath = path.join(__dirname, "templates", "views");
 const partialsPath = path.join(__dirname, "templates", "partials");
 
-
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.set("view engine", "hbs");
@@ -48,8 +49,6 @@ app.set("socketio", io);
 app.use(express.json());
 app.use(userRouter);
 app.use(tutorApplicationRouter);
-// app.use(reportRouter);
-// app.use(analyticsRouter);
 app.use(homeRouter);
 app.use(studyRoomRouter);
 app.use(tutorRouter);
@@ -57,6 +56,7 @@ app.use(ratingsRouter);
 app.use(helpRequestRouter);
 app.use(indexRouter);
 app.use(analyticsRouter);
+app.use(reportRouter);
 
 
 export default server;
