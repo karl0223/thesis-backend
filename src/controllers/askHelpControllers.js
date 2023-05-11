@@ -1,4 +1,5 @@
 import HelpRequest from "../models/askHelp.js";
+import User from "../models/user.js";
 import ChatRoom from "../models/chatRoom.js";
 import { getUserSocket } from "../utils/socketUtils.js";
 
@@ -54,7 +55,9 @@ const createRequest = async (req, res) => {
     });
 
     if (existingChatRoom) {
-      return res.status(400).send("You still have an existing chatroom");
+      return res
+        .status(400)
+        .send("You or the tutor still have an existing chatroom");
     }
 
     const tutorSocket = await getUserSocket(tutorId);
@@ -176,14 +179,23 @@ const acceptRequest = async (req, res) => {
         "accepted"
       );
 
+      const tutee = await User.findById(helpRequest.studentId._id);
+      const tutor = await User.findById(req.user._id);
+
+      tutee.hasRoom = true;
+      tutor.hasRoom = true;
+
+      await tutee.save();
+      await tutor.save();
+
       // Cancel other rooms where the user is a participant
-      const userRooms = await ChatRoom.getUserRooms(helpRequest.studentId);
+      const userRooms = await ChatRoom.getUserRooms(tutee._id);
       for (const room of userRooms) {
         if (room._id.toString() !== chatRoom._id.toString()) {
-          await ChatRoom.cancelParticipant(room._id, helpRequest.studentId._id);
+          await ChatRoom.cancelParticipant(room._id, tutee._id);
           io.to(room._id).emit("participant-cancelled", {
             roomId: room._id,
-            userId: helpRequest.studentId._id,
+            userId: tutee._id,
           });
         }
       }

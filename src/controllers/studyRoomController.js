@@ -1,4 +1,5 @@
 import ChatRoom from "../models/chatRoom.js";
+import User from "../models/user.js";
 import Message from "../models/messages.js";
 import purify from "../utils/domPurify.js";
 import { getUserSocket } from "../utils/socketUtils.js";
@@ -12,8 +13,9 @@ const createChatRoom = async (req, res) => {
       throw new Error("Only tutors can create study rooms");
     }
 
-    const hasRoom = await ChatRoom.findOne({ owner: req.user._id });
-    if (hasRoom) {
+    const user = await User.findById(req.user._id);
+
+    if (user.hasRoom === true) {
       throw new Error("User already has a study room");
     }
 
@@ -42,6 +44,9 @@ const createChatRoom = async (req, res) => {
         subtopics,
       },
     });
+
+    user.hasRoom = true;
+    await user.save();
 
     await ChatRoom.addParticipant(chatRoom._id, req.user._id, "owner");
     res.send(chatRoom);
@@ -142,6 +147,9 @@ const leaveChatRoom = async (req, res) => {
       const participantsToKick = chatRoom.participants;
       // Kick each participant
       for (const participant of participantsToKick) {
+        let user = await User.findById(participant.userId);
+        user.hasRoom = false;
+        await user.save();
         await ChatRoom.updateOne(
           { _id: roomId },
           { $pull: { participants: { userId: participant.userId._id } } }
@@ -153,6 +161,10 @@ const leaveChatRoom = async (req, res) => {
 
       res.send();
     } else {
+      const user = await User.findById(userId);
+      user.hasRoom = false;
+      await user.save();
+
       await ChatRoom.removeParticipant(roomId, userId);
       // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
       io.to(roomId).emit("user-left", {
@@ -489,12 +501,19 @@ const acceptUserRequest = async (req, res) => {
       path: "participants.userId",
       select: "firstName lastName",
     });
+
+    const user = await User.findById(userId);
+
     // const chatRoom = await ChatRoom.findOne({ owner: owner }); use only if you want to only get the owner's room
     if (!chatRoom) {
       return res.status(404).send("Chat room not found");
     }
     if (String(chatRoom.owner) !== String(owner)) {
       return res.status(401).send("Unauthorized");
+    }
+
+    if (user.hasRoom) {
+      return res.status(400).send("User already has a room");
     }
 
     const pendingParticipants = chatRoom.participants.filter(
@@ -514,6 +533,9 @@ const acceptUserRequest = async (req, res) => {
     participant.status = "accepted";
 
     const userRooms = await ChatRoom.getUserRooms(userId);
+
+    user.hasRoom = true;
+    await user.save();
 
     // Cancel the user's participation in other rooms
     for (const room of userRooms) {
@@ -638,6 +660,7 @@ const pendingParticipants = async (req, res) => {
 const kickParticipant = async (req, res) => {
   const io = req.app.get("socketio");
   const { roomId, userId } = req.params;
+  const user = await User.findById(userId);
 
   try {
     const chatRoom = await ChatRoom.findById(roomId);
@@ -652,6 +675,9 @@ const kickParticipant = async (req, res) => {
     if (!participant) {
       return res.status(401).send("Unauthorized");
     }
+
+    user.hasRoom = false;
+    await user.save();
 
     await ChatRoom.removeParticipant(roomId, userId);
     // Emit a "user-kicked" event to the user to indicate that they have been kicked
@@ -687,6 +713,10 @@ const kickAllParticipants = async (req, res) => {
 
     // Kick each participant
     for (const participant of participantsToKick) {
+      let user = await User.findById(participant.userId);
+      user.hasRoom = false;
+      await user.save();
+
       await ChatRoom.updateOne(
         { _id: roomId },
         { $pull: { participants: { userId: participant.userId._id } } }

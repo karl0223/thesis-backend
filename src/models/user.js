@@ -46,6 +46,7 @@ const userSchema = new mongoose.Schema(
     ],
     avatar: {
       type: String,
+      default: "",
     },
     role: {
       type: String,
@@ -98,6 +99,10 @@ const userSchema = new mongoose.Schema(
     isAvailable: {
       type: Boolean,
       default: true,
+    },
+    hasRoom: {
+      type: Boolean,
+      default: false,
     },
     subjects: {
       type: [
