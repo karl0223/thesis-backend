@@ -99,6 +99,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    hasRoom: {
+      type: Boolean,
+      default: false,
+    },
     subjects: {
       type: [
         {
