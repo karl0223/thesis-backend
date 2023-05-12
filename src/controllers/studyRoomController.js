@@ -492,7 +492,7 @@ const sendInvite = async (req, res) => {
 
 const acceptUserRequest = async (req, res) => {
   const io = req.app.get("socketio");
-  const { roomId, userId } = req.params;
+  const { roomId, status, userId } = req.params;
   const owner = req.user._id;
 
   try {
@@ -529,45 +529,69 @@ const acceptUserRequest = async (req, res) => {
       return res.status(404).send("User is not in the pending list");
     }
 
-    // Change the participant's status to accepted
-    participant.status = "accepted";
+    if (status === "accepted") {
+      // Change the participant's status to accepted
+      participant.status = status;
 
-    const userRooms = await ChatRoom.getUserRooms(userId);
+      const userRooms = await ChatRoom.getUserRooms(userId);
 
-    user.hasRoom = true;
-    await user.save();
+      user.hasRoom = true;
+      await user.save();
 
-    // Cancel the user's participation in other rooms
-    for (const room of userRooms) {
-      if (room.owner && room.owner.toString() === userId.toString()) {
-        continue; // Skip to the next iteration of the loop
+      // Cancel the user's participation in other rooms
+      for (const room of userRooms) {
+        if (room.owner && room.owner.toString() === userId.toString()) {
+          continue; // Skip to the next iteration of the loop
+        }
+
+        if (room._id.toString() !== roomId.toString()) {
+          await ChatRoom.cancelParticipant(room._id, userId);
+        }
       }
 
-      if (room._id.toString() !== roomId.toString()) {
-        await ChatRoom.cancelParticipant(room._id, userId);
+      await chatRoom.save();
+
+      // Get the latest chat messages in the chat room
+      const latestMessages = await Message.find({ roomId })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate("userId", "firstName lastName");
+
+      // Send a notification to the accepted participant
+      const socketId = await getUserSocket(userId);
+      if (socketId) {
+        io.to(socketId).emit("participant-accepted", {
+          messages: latestMessages,
+          chatRoom,
+          userId,
+        });
+        io.to(roomId).emit("participant-joined", { userId });
       }
-    }
 
-    await chatRoom.save();
+      res.status(200).send("User accepted successfully.");
+    } else {
+      // Remove the participant from the pending list
+      chatRoom.participants = chatRoom.participants.filter(
+        (p) => p.userId.toString() !== userId.toString()
+      );
+      await chatRoom.save();
 
-    // Get the latest chat messages in the chat room
-    const latestMessages = await Message.find({ roomId })
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate("userId", "firstName lastName");
-
-    // Send a notification to the accepted participant
-    const socketId = await getUserSocket(userId);
-    if (socketId) {
-      io.to(socketId).emit("participant-accepted", {
-        messages: latestMessages,
-        chatRoom,
-        userId,
+      // Send a notification to the rejected participant
+      const socketId = await getUserSocket(userId);
+      if (socketId) {
+        io.to(socketId).emit("participant-rejected", { chatRoom });
+      }
+      io.to(roomId).emit("user-left", {
+        roomId,
+        user: {
+          userId: req.user._id,
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+        },
       });
-      io.to(roomId).emit("participant-joined", { userId } );
-    }
 
-    res.status(200).send();
+      res.status(200).send("User rejected successfully.");
+    }
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");

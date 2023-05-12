@@ -77,7 +77,7 @@ studyRoomRouter.post(
 studyRoomRouter.post("/api/studyroom/leave/:roomId", auth, leaveChatRoom);
 
 studyRoomRouter.patch(
-  "/api/studyroom/accept-participant/:roomId/:userId",
+  "/api/studyroom/accept-participant/:roomId/:userId/:status",
   auth,
   acceptUserRequest
 );
