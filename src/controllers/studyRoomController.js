@@ -101,7 +101,7 @@ const joinRoom = async (req, res) => {
       if (owner) {
         const ownerSocketId = await getUserSocket(owner._id);
         if (ownerSocketId) {
-          io.to(ownerSocketId).emit("new-pending-participant", {
+          io.to(roomId).emit("new-pending-participant", {
             roomId,
             user: newParticipant,
           });
@@ -564,6 +564,7 @@ const acceptUserRequest = async (req, res) => {
         chatRoom,
         userId,
       });
+      io.to(roomId).emit("participant-joined", { userId } );
     }
 
     res.status(200).send();
