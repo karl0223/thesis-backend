@@ -1,6 +1,5 @@
 import express from "express";
-import multer from "multer";
-import { auth, authAdmin } from "../middleware/auth.js";
+import { auth, authAdmin } from "../../middleware/auth.js";
 import {
   changeRole,
   getApplication,
@@ -13,7 +12,7 @@ import {
   approveTutorApplication,
   rejectTutorApplication,
   getUploadedImage,
-} from "../controllers/tutorApplicationControllers.js";
+} from "../../controllers/admin-controllers/tutorApplicationControllers.js";
 
 const tutorApplicationRouter = express.Router();
 
@@ -22,6 +21,13 @@ const tutorApplicationRouter = express.Router();
 // update the user's role if acceptedd --DONE
 // delete user's application if rejected -- DONE
 // create check application route
+
+// Get all tutor using controller
+tutorApplicationRouter.get(
+  "/admin/tutor-application",
+  authAdmin,
+  getAllTutorApplications
+);
 
 // change tutor role to tutee - for testing
 tutorApplicationRouter.patch(
@@ -40,13 +46,6 @@ tutorApplicationRouter.get(
 // Get user application
 tutorApplicationRouter.get("/api/tutor-application/me", auth, getApplication);
 
-// Get all tutor using controller
-tutorApplicationRouter.get(
-  "/api/tutor-application",
-  authAdmin,
-  getAllTutorApplications
-);
-
 // Get a single tutor application by ID (admin)
 tutorApplicationRouter.get(
   "/api/tutor-application/:id",
@@ -55,15 +54,15 @@ tutorApplicationRouter.get(
 );
 
 // Accept tutor application (admin)
-tutorApplicationRouter.patch(
-  "/api/tutor-application/:id/approve",
+tutorApplicationRouter.get(
+  "/admin/tutor-application/:id/approve",
   authAdmin,
   approveTutorApplication
 );
 
 // Reject tutor application (admin)
-tutorApplicationRouter.delete(
-  "/api/tutor-application/:id/rejected",
+tutorApplicationRouter.get(
+  "/admin/tutor-application/:id/rejected",
   authAdmin,
   rejectTutorApplication
 );

@@ -1,0 +1,41 @@
+{{> header}}
+<main class="mt-5 pt-3">
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="bi bi-table me-2"></i></span> Pending Tutors
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="pendingTutors" class="table table-striped data-table" style="width: 100%">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Brief intro</th>
+                                    <th>Email</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#parseJSON applications}}
+                                    {{{printEmptyTr}}}
+                                    {{#each this}}
+                                        {{{ createModals }}}
+                                        {{{ tutorRequestPrint }}}
+                                    {{/each}}
+                                {{else}}
+                                Invalid JSON: {{this}}
+                                {{/parseJSON}}
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+{{> footer}}

@@ -1,5 +1,6 @@
-import TutorApplication from "../models/tutorApplication.js";
-import User from "../models/user.js";
+import TutorApplication from "../../models/tutorApplication.js";
+import User from "../../models/user.js";
+import { getUserSocket } from "../../utils/socketUtils.js";
 
 const changeRole = async (req, res) => {
   try {
@@ -30,11 +31,18 @@ const getTutorApplicationCount = async (req, res) => {
 // under construction
 const getApplication = async (req, res) => {
   try {
-    const tutorApplications = await TutorApplication.find({
+    const tutorApplication = await TutorApplication.findOne({
       userId: req.user._id,
-    }).populate("userId", "firstName");
+      status: "pending",
+    });
+    console.log("Tutor application retrieved successfully!");
+    console.log(tutorApplication);
 
-    res.json(tutorApplications);
+    if (!tutorApplication) {
+      return res.status(404).json({ msg: "Tutor application not found" });
+    }
+
+    res.json(tutorApplication);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
@@ -43,14 +51,19 @@ const getApplication = async (req, res) => {
 
 const getAllTutorApplications = async (req, res) => {
   try {
-    const tutorApplications = await TutorApplication.find().populate(
+    const tutorApplications = await TutorApplication.find({status: "pending"}).populate(
       "userId",
-      "firstName"
+      "firstName lastName email"
     );
 
-    const count = await TutorApplication.countDocuments();
+    const context = {
+      applications: JSON.stringify(tutorApplications),
+    };
+    console.log(context);
 
-    res.json({ tutorApplications, totalCount: count });
+    res.render("pending_tutors", context);
+
+    //es.json({ tutorApplications, totalCount: count });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
@@ -61,10 +74,13 @@ const getTutorApplicationById = async (req, res) => {
   try {
     const tutorApplication = await TutorApplication.findById(
       req.params.id
-    ).populate("userId", "-password");
+    );
     if (!tutorApplication) {
       return res.status(404).json({ msg: "Tutor application not found" });
     }
+    console.log("Tutor application retrieved successfully!");
+    console.log(tutorApplication);
+
     res.json(tutorApplication);
   } catch (err) {
     console.error(err.message);
@@ -93,6 +109,9 @@ const createTutorApplication = async (req, res) => {
     });
 
     await tutorApplication.save();
+
+    console.log("Tutor application submitted successfully!");
+    console.log(tutorApplication);
 
     res.json(tutorApplication);
   } catch (err) {
@@ -123,6 +142,9 @@ const updateTutorApplication = async (req, res) => {
 
     await tutorApplication.save();
 
+    console.log("Tutor application updated successfully!");
+    console.log(tutorApplication);
+
     res.json(tutorApplication);
   } catch (err) {
     console.error(err.message);
@@ -132,13 +154,22 @@ const updateTutorApplication = async (req, res) => {
 
 const rejectTutorApplication = async (req, res) => {
   try {
+    const io = req.app.get("socketio");
     const tutorApplication = await TutorApplication.findById(
       req.params.id,
       { status: "rejected" },
       { new: true }
     );
+    
+    console.log("Tutor application rejected successfully!");
+    console.log(tutorApplication);
+    var userSocket = await getUserSocket(tutorApplication.userId);
+    if(userSocket){
+      io.emit("tutor-application-rejected", tutorApplication);
+    }
+
     tutorApplication.remove();
-    res.json(tutorApplication);
+    res.redirect("/admin/tutor-application");
   } catch (err) {
     console.log(err.message);
     res.status(500).send("Server Error");
@@ -166,6 +197,7 @@ const deleteTutorApplication = async (req, res) => {
 
 const approveTutorApplication = async (req, res) => {
   try {
+    const io = req.app.get("socketio");
     const tutorApplication = await TutorApplication.findById(req.params.id);
 
     tutorApplication.status = "approved";
@@ -179,14 +211,15 @@ const approveTutorApplication = async (req, res) => {
     await tutorApplication.save();
     await updateRole.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Tutor application approved successfully!",
-      data: {
-        tutorApplication,
-        updateRole,
-      },
-    });
+    var userSocket = await getUserSocket(tutorApplication.userId);
+    if(userSocket){
+      io.emit("tutor-application-approved", tutorApplication);
+    }
+    
+    console.log("Tutor application approved successfully!");
+    console.log(tutorApplication);
+    
+    res.redirect("/admin/tutor-application");
   } catch (error) {
     console.error(error);
     res.status(500).json({

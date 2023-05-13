@@ -10,11 +10,8 @@ import {
 const analyticsRouter = express.Router();
 
 analyticsRouter.get("/admin/analytics", authAdmin, async (req, res) => {
-  // shows the UI then pass all the values here to show the charts
 
-  //console.log("getReportsAnalytics", getReportsAnalytics);
   var topSearches = await getTopSearches();
-
   const context = {
     topSearches: JSON.stringify(topSearches)
   };
