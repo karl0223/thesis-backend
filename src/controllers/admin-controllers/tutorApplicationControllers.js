@@ -51,10 +51,9 @@ const getApplication = async (req, res) => {
 
 const getAllTutorApplications = async (req, res) => {
   try {
-    const tutorApplications = await TutorApplication.find({status: "pending"}).populate(
-      "userId",
-      "firstName lastName email"
-    );
+    const tutorApplications = await TutorApplication.find({
+      status: "pending",
+    }).populate("userId", "firstName lastName email");
 
     const context = {
       applications: JSON.stringify(tutorApplications),
@@ -72,9 +71,7 @@ const getAllTutorApplications = async (req, res) => {
 
 const getTutorApplicationById = async (req, res) => {
   try {
-    const tutorApplication = await TutorApplication.findById(
-      req.params.id
-    );
+    const tutorApplication = await TutorApplication.findById(req.params.id);
     if (!tutorApplication) {
       return res.status(404).json({ msg: "Tutor application not found" });
     }
@@ -155,16 +152,21 @@ const updateTutorApplication = async (req, res) => {
 const rejectTutorApplication = async (req, res) => {
   try {
     const io = req.app.get("socketio");
-    const tutorApplication = await TutorApplication.findById(
-      req.params.id,
+    const tutorApplication = await TutorApplication.findOneAndUpdate(
+      { _id: req.params.id },
       { status: "rejected" },
       { new: true }
     );
-    
+
+    if (!tutorApplication) {
+      return res.status(404).send("Tutor application not found");
+    }
+
     console.log("Tutor application rejected successfully!");
     console.log(tutorApplication);
+    console.log(`User ID: ${tutorApplication.userId}`);
     var userSocket = await getUserSocket(tutorApplication.userId);
-    if(userSocket){
+    if (userSocket) {
       io.emit("tutor-application-rejected", tutorApplication);
     }
 
@@ -212,13 +214,13 @@ const approveTutorApplication = async (req, res) => {
     await updateRole.save();
 
     var userSocket = await getUserSocket(tutorApplication.userId);
-    if(userSocket){
+    if (userSocket) {
       io.emit("tutor-application-approved", tutorApplication);
     }
-    
+
     console.log("Tutor application approved successfully!");
     console.log(tutorApplication);
-    
+
     res.redirect("/admin/tutor-application");
   } catch (error) {
     console.error(error);
