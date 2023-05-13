@@ -546,6 +546,11 @@ const acceptUserRequest = async (req, res) => {
 
         if (room._id.toString() !== roomId.toString()) {
           await ChatRoom.cancelParticipant(room._id, userId);
+
+          io.to(room._id).emit("participant-cancelled", {
+            roomId: room._id,
+            userId: userId,
+          });
         }
       }
 
