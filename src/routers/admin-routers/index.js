@@ -10,9 +10,9 @@ import {
 
 const indexRouter = express.Router();
 
-indexRouter.get("/admin/login", login);
+indexRouter.get("/login", login);
 
-indexRouter.post("/admin/login", loginFunction);
+indexRouter.post("/login", loginFunction);
 
 indexRouter.get("/admin", authAdmin, adminHome);
 

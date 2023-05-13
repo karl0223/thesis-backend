@@ -14,7 +14,7 @@ const login = (req, res) => {
 
 const loginFunction = async (req, res) => {
   try {
-    
+    console.log(req.body);
     const  { email, password } = req.body;
     const deviceToken = "hapihapi";
     const fcmToken = "hapi";
@@ -40,15 +40,15 @@ const loginFunction = async (req, res) => {
 
     await user.save();
 
-    
-
     const token = await user.generateAuthToken();
+
     res.cookie("access_token", token, {
       httpOnly: true,
       //secure: process.env.NODE_ENV === "production",
     });
+
     res.redirect("/admin");
-    res.send({ user, token });
+    //res.send({ user, token });
   } catch (e) {
     res.status(400).send();
   }
