@@ -581,9 +581,7 @@ const acceptUserRequest = async (req, res) => {
       io.to(roomId).emit("user-left", {
         roomId,
         user: {
-          userId: req.user._id,
-          firstName: req.user.firstName,
-          lastName: req.user.lastName,
+          userId: userId,
         },
       });
 
