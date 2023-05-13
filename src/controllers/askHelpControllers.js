@@ -48,7 +48,15 @@ const createRequest = async (req, res) => {
         { owner: req.user._id },
         {
           participants: {
-            $elemMatch: { userId: req.user._id },
+            $elemMatch: { userId: req.user._id, status: "accepted" },
+          },
+        },
+        {
+          participants: {
+            $elemMatch: {
+              userId: tutorId,
+              status: "accepted",
+            },
           },
         },
       ],
