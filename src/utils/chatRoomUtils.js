@@ -1,6 +1,30 @@
 // Import the required dependencies
 import ChatRoom from "../models/chatRoom.js";
 
+const cancelAllRoomRequests = async (userId, chatRoomId) => {
+  const io = req.app.get("socketio");
+
+  try {
+    const userRooms = await ChatRoom.getUserRooms(userId);
+    for (const room of userRooms) {
+      if (room.owner && room.owner.toString() === userId.toString()) {
+        continue; // Skip to the next iteration of the loop
+      }
+      if (room._id.toString() !== chatRoomId.toString()) {
+        await ChatRoom.cancelParticipant(room._id, userId);
+        io.to(room._id).emit("participant-cancelled", {
+          roomId: room._id,
+          userId,
+        });
+      }
+    }
+
+    await chatRoom.save();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 // Invite a user to a chat room
 const inviteUser = async (io, roomId, inviteeId) => {
   const participant = await ChatRoom.isParticipant(roomId, inviteeId);
@@ -83,6 +107,7 @@ const demoteOwner = async (roomId, userId) => {
 };
 
 export {
+  cancelAllRoomRequests,
   inviteUser,
   acceptInvitation,
   rejectInvitation,

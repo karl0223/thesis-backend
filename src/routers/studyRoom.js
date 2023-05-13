@@ -18,6 +18,7 @@ import {
   acceptInvite,
   kickParticipant,
   kickAllParticipants,
+  removeAllRoomRequest,
   sessionEnded,
 } from "../controllers/studyRoomController.js";
 
@@ -75,6 +76,8 @@ studyRoomRouter.post(
 );
 
 studyRoomRouter.post("/api/studyroom/leave/:roomId", auth, leaveChatRoom);
+
+studyRoomRouter.post("/api/studyroom/cancel-rooms", auth, removeAllRoomRequest);
 
 studyRoomRouter.patch(
   "/api/studyroom/accept-participant/:roomId/:userId/:status",

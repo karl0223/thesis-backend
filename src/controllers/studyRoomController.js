@@ -3,7 +3,11 @@ import User from "../models/user.js";
 import Message from "../models/messages.js";
 import purify from "../utils/domPurify.js";
 import { getUserSocket } from "../utils/socketUtils.js";
-import { inviteUser, acceptInvitation } from "../utils/chatRoomUtils.js";
+import {
+  cancelAllRoomRequests,
+  inviteUser,
+  acceptInvitation,
+} from "../utils/chatRoomUtils.js";
 import { normalizeText, termCounts } from "../utils/searchUtils.js";
 
 // Create a new chat room and add the owner as a participant
@@ -49,6 +53,8 @@ const createChatRoom = async (req, res) => {
     await user.save();
 
     await ChatRoom.addParticipant(chatRoom._id, req.user._id, "owner");
+    await cancelAllRoomRequests(req.user._id, chatRoom._id);
+
     res.send(chatRoom);
   } catch (err) {
     console.log(err);
@@ -67,17 +73,7 @@ const joinRoom = async (req, res) => {
       (participant && participant.status === "accepted") ||
       participant.status === "owner"
     ) {
-      // Cancel other rooms where the user is a participant
-      const userRooms = await ChatRoom.getUserRooms(userId);
-      for (const room of userRooms) {
-        if (room._id.toString() !== chatRoom._id.toString()) {
-          await ChatRoom.cancelParticipant(room._id, userId);
-          io.to(room._id).emit("participant-cancelled", {
-            roomId: room._id,
-            userId,
-          });
-        }
-      }
+      await cancelAllRoomRequests(userId, roomId);
       res.status(200).send();
     } else if (participant && participant.status === "pending") {
       // If user has already requested to join the room, return an error message
@@ -533,23 +529,10 @@ const acceptUserRequest = async (req, res) => {
       // Change the participant's status to accepted
       participant.status = status;
 
-      const userRooms = await ChatRoom.getUserRooms(userId);
-
       user.hasRoom = true;
       await user.save();
 
-      // Cancel the user's participation in other rooms
-      for (const room of userRooms) {
-        if (room.owner && room.owner.toString() === userId.toString()) {
-          continue; // Skip to the next iteration of the loop
-        }
-
-        if (room._id.toString() !== roomId.toString()) {
-          await ChatRoom.cancelParticipant(room._id, userId);
-        }
-      }
-
-      await chatRoom.save();
+      await cancelAllRoomRequests(userId, chatRoom._id);
 
       // Get the latest chat messages in the chat room
       const latestMessages = await Message.find({ roomId })
@@ -761,6 +744,17 @@ const kickAllParticipants = async (req, res) => {
   }
 };
 
+const removeAllRoomRequest = async (req, res) => {
+  try {
+    await cancelAllRoomRequests(req.user._id);
+
+    res.status(200).send("All room requests have been cancelled");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+};
+
 const sessionEnded = async (req, res) => {
   const io = req.app.get("socketio");
   const { roomId } = req.params;
@@ -806,5 +800,6 @@ export {
   acceptInvite,
   kickParticipant,
   kickAllParticipants,
+  removeAllRoomRequest,
   sessionEnded,
 };
