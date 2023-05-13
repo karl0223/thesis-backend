@@ -8,7 +8,7 @@ const getAllTutors = async (req, res) => {
   const page = parseInt(rawPage, 10);
   const limit = parseInt(rawLimit, 10);
 
-  let query = { role: "tutor" };
+  let query = { role: "tutor", "subjects.0.subjectCode": { $exists: true } };
 
   if (search) {
     const sanitizedSearch = purify.sanitize(search);
