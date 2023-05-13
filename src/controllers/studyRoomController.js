@@ -571,10 +571,7 @@ const acceptUserRequest = async (req, res) => {
       res.status(200).send("User accepted successfully.");
     } else {
       // Remove the participant from the pending list
-      chatRoom.participants = chatRoom.participants.filter(
-        (p) => p.userId.toString() !== userId.toString()
-      );
-      await chatRoom.save();
+      await ChatRoom.cancelParticipant(roomId, userId);
 
       // Send a notification to the rejected participant
       const socketId = await getUserSocket(userId);

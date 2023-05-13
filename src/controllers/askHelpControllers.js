@@ -132,12 +132,15 @@ const acceptRequest = async (req, res) => {
         { owner: req.user._id },
         {
           participants: {
-            $elemMatch: { userId: req.user._id },
+            $elemMatch: { userId: req.user._id, status: "accepted" },
           },
         },
         {
           participants: {
-            $elemMatch: { userId: helpRequest.studentId._id },
+            $elemMatch: {
+              userId: helpRequest.studentId._id,
+              status: "accepted",
+            },
           },
         },
       ],
@@ -189,13 +192,24 @@ const acceptRequest = async (req, res) => {
       await tutor.save();
 
       // Cancel other rooms where the user is a participant
-      const userRooms = await ChatRoom.getUserRooms(tutee._id);
-      for (const room of userRooms) {
+      const tuteeRooms = await ChatRoom.getUserRooms(tutee._id);
+      for (const room of tuteeRooms) {
         if (room._id.toString() !== chatRoom._id.toString()) {
           await ChatRoom.cancelParticipant(room._id, tutee._id);
           io.to(room._id).emit("participant-cancelled", {
             roomId: room._id,
             userId: tutee._id,
+          });
+        }
+      }
+
+      const tutorRooms = await ChatRoom.getUserRooms(tutor._id);
+      for (const room of tutorRooms) {
+        if (room._id.toString() !== chatRoom._id.toString()) {
+          await ChatRoom.cancelParticipant(room._id, tutor._id);
+          io.to(room._id).emit("participant-cancelled", {
+            roomId: room._id,
+            userId: tutor._id,
           });
         }
       }
