@@ -14,15 +14,22 @@ analyticsRouter.get(
   webAuth,
   webAdminAuth,
   async (req, res) => {
-    var topSearches = await getTopSearches();
-    const context = {
-      topSearches: JSON.stringify(topSearches),
-    };
-    console.log("context", context);
+    try {
+      const topSearches = await getTopSearches();
+      const { topTutor, topSubject } = await getMostSearchedTutorAndSubject();
+      const context = {
+        topSearches: JSON.stringify(topSearches),
+        topTutor,
+        topSubject,
+      };
 
-    res.render("analytics", context);
+      console.log(context);
 
-    //sample: res.render("analytics", { mostSearch, topSearch, allSearch });
+      res.render("analytics", context);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
+    }
   }
 );
 

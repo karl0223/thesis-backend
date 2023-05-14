@@ -44,7 +44,7 @@ const getTopSearches = async (req, res) => {
       .sort({ count: -1 })
       .limit(10)
       .select("-_id term count");
-      
+
     console.log("topSearches", topSearches);
     console.log(topSearches);
     return topSearches;

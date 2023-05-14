@@ -1,6 +1,5 @@
 {{> header}}
 
-
 <main class="mt-5 pt-3">
     <div class="container-fluid">
         <div class="row">
@@ -19,10 +18,55 @@
                 <div class="card h-100">
                     <div class="card-header">
                         <span class="me-2"><i class="bi bi-bar-chart-fill"></i></span>
-                        Area Chart Example
+                        Top Tutors
                     </div>
                     <div class="card-body">
-                        <canvas class="chart" width="400" height="200"></canvas>
+                        <table class="table data-table">
+                            <thead>
+                                <tr>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Search Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each topTutor}}
+                                <tr>
+                                    <td>{{firstName}}</td>
+                                    <td>{{lastName}}</td>
+                                    <td>{{searchCount}}</td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <span class="me-2"><i class="bi bi-bar-chart-fill"></i></span>
+                        Top Subjects
+                    </div>
+                    <div class="card-body">
+                        <table class="table data-table">
+                            <thead>
+                                <tr>
+                                    <th>Subject Code</th>
+                                    <th>Description</th>
+                                    <th>Search Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each topSubject}}
+                                <tr>
+                                    <td>{{subjectCode}}</td>
+                                    <td>{{description}}</td>
+                                    <td>{{searchCount}}</td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -37,7 +81,6 @@
 <script src="/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-
     var raw = '{{topSearches}}';
     var topsearches = JSON.parse(raw.replace(/&quot;/g, '"'));
 
@@ -92,4 +135,15 @@
 
 </script>
 
+
 {{> footer}}
+
+
+
+
+
+
+
+
+
+                        
