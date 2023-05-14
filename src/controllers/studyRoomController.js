@@ -778,6 +778,18 @@ const sessionEnded = async (req, res) => {
 
     chatroom.sessionEnded = true;
 
+    const participantsToKick = chatRoom.participants;
+    // Kick each participant with status "pending"
+    for (const participant of participantsToKick) {
+      if (participant.status === "pending") {
+        let user = await User.findById(participant.userId);
+        await ChatRoom.updateOne(
+          { _id: roomId },
+          { $pull: { participants: { userId: participant.userId } } }
+        );
+      }
+    }
+
     await chatroom.save();
 
     io.to(roomId).emit("session-ended", { message: "Session Ended", roomId });
