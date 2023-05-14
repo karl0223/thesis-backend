@@ -6,11 +6,6 @@ const rateParticipants = async (req, res) => {
     const tutorId = req.user._id;
 
     const promises = participants.map(async (participant) => {
-      if (participant.status === "pending") {
-        // Skip participants with a status of "pending"
-        return;
-      }
-
       const tuteeId = participant._id;
 
       const user = await User.findById(tuteeId);

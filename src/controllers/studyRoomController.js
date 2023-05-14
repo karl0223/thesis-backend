@@ -628,9 +628,13 @@ const getUserChatRooms = async (req, res) => {
     // Find the chat room the user has joined or owns
     const chatRoom = await ChatRoom.findOne({
       $or: [
-        { owner: userId },
         {
-          participants: { $elemMatch: { userId: userId, status: "accepted" } },
+          owner: userId,
+          participants: { $elemMatch: { userId, status: "owner" } },
+        },
+        {
+          owner: { $ne: userId },
+          participants: { $elemMatch: { userId, status: "accepted" } },
         },
       ],
     }).populate({
