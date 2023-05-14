@@ -26,7 +26,7 @@ async function sendVerificationEmail(user) {
   await user.save();
 
   const verificationUrl = `
-  ${process.env.PORT}/api/users/verify?verificationToken=${verificationToken}`;
+  https://liftapp.onrender.com/api/users/verify?verificationToken=${verificationToken}`;
 
   const mailOptions = {
     from: "noreply@example.com",
