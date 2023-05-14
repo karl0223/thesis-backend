@@ -72,7 +72,7 @@ const joinRoom = async (req, res) => {
       for (const room of userRooms) {
         if (room._id.toString() !== chatRoom._id.toString()) {
           await ChatRoom.cancelParticipant(room._id, userId);
-          io.to(room._id).emit("participant-cancelled", {
+          io.to(room._id.toString()).emit("participant-cancelled", {
             roomId: room._id,
             userId,
           });
@@ -547,7 +547,7 @@ const acceptUserRequest = async (req, res) => {
         if (room._id.toString() !== roomId.toString()) {
           await ChatRoom.cancelParticipant(room._id, userId);
 
-          io.to(room._id).emit("participant-cancelled", {
+          io.to(room._id.toString()).emit("participant-cancelled", {
             roomId: room._id,
             userId: userId,
           });
