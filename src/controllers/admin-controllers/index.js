@@ -15,16 +15,16 @@ const login = (req, res) => {
 const loginFunction = async (req, res) => {
   try {
     console.log(req.body);
-    const  { email, password } = req.body;
+    const { email, password } = req.body;
     const deviceToken = "hapihapi";
     const fcmToken = "hapi";
 
     const user = await User.findByCredentials(email, password);
 
     if (!user.isEmailVerified || user.role !== "admin") {
-      return res.redirect("/admin/login");
+      return res.redirect("/login");
     }
-    
+
     const updatedDevice = { deviceToken, fcmToken };
     const deviceIndex = user.devices.findIndex(
       (device) => device.deviceToken === deviceToken
@@ -56,7 +56,7 @@ const loginFunction = async (req, res) => {
 
 const logout = async (req, res) => {
   res.clearCookie("access_token");
-  res.redirect("/admin/login");
-}
+  res.redirect("/login");
+};
 
 export { adminHome, login, loginFunction, logout };

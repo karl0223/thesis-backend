@@ -1,6 +1,6 @@
 import express from "express";
 
-import { authAdmin } from "../../middleware/auth.js";
+import { webAuth, webAdminAuth } from "../../middleware/webAdminAuth.js";
 import {
   adminHome,
   login,
@@ -14,8 +14,8 @@ indexRouter.get("/login", login);
 
 indexRouter.post("/login", loginFunction);
 
-indexRouter.get("/admin", authAdmin, adminHome);
+indexRouter.get("/admin", webAuth, webAdminAuth, adminHome);
 
-indexRouter.get("/admin/logout", authAdmin, logout);
+indexRouter.get("/admin/logout", webAuth, webAdminAuth, logout);
 
 export default indexRouter;

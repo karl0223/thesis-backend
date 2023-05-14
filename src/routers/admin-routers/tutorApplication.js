@@ -1,5 +1,6 @@
 import express from "express";
-import { auth, authAdmin } from "../../middleware/auth.js";
+import { auth } from "../../middleware/auth.js";
+import { webAuth, webAdminAuth } from "../../middleware/webAdminAuth.js";
 import {
   changeRole,
   getApplication,
@@ -25,7 +26,8 @@ const tutorApplicationRouter = express.Router();
 // Get all tutor using controller
 tutorApplicationRouter.get(
   "/admin/tutor-application",
-  authAdmin,
+  webAuth,
+  webAdminAuth,
   getAllTutorApplications
 );
 
@@ -39,7 +41,8 @@ tutorApplicationRouter.patch(
 // total count of submitted tutor application
 tutorApplicationRouter.get(
   "/api/tutor-application/count",
-  authAdmin,
+  webAuth,
+  webAdminAuth,
   getTutorApplicationCount
 );
 
@@ -49,21 +52,24 @@ tutorApplicationRouter.get("/api/tutor-application/me", auth, getApplication);
 // Get a single tutor application by ID (admin)
 tutorApplicationRouter.get(
   "/api/tutor-application/:id",
-  authAdmin,
+  webAuth,
+  webAdminAuth,
   getTutorApplicationById
 );
 
 // Accept tutor application (admin)
 tutorApplicationRouter.get(
   "/admin/tutor-application/:id/approve",
-  authAdmin,
+  webAuth,
+  webAdminAuth,
   approveTutorApplication
 );
 
 // Reject tutor application (admin)
 tutorApplicationRouter.get(
   "/admin/tutor-application/:id/rejected",
-  authAdmin,
+  webAuth,
+  webAdminAuth,
   rejectTutorApplication
 );
 

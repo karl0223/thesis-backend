@@ -4,15 +4,16 @@ import {
   reportUser,
   updateReport,
 } from "../../controllers/admin-controllers/reportControllers.js";
-import { auth, authAdmin } from "../../middleware/auth.js";
+import { auth } from "../../middleware/auth.js";
+import { webAuth, webAdminAuth } from "../../middleware/webAdminAuth.js";
 
 const reportRouter = express.Router();
 
 // Get all reports (admin)
-reportRouter.get("/admin/reports", authAdmin, getAllReports);
+reportRouter.get("/admin/reports", webAuth, webAdminAuth, getAllReports);
 
 // update report status (admin)
-reportRouter.put("/admin/reports/:id", authAdmin, updateReport);
+reportRouter.put("/admin/reports/:id", webAuth, webAdminAuth, updateReport);
 
 // report user
 reportRouter.post("/admin/reports", auth, reportUser);
