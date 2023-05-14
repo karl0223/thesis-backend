@@ -95,6 +95,7 @@ const userSchema = new mongoose.Schema(
     },
     timeAndDateAvailability: {
       type: String,
+      default: "",
     },
     isAvailable: {
       type: Boolean,
