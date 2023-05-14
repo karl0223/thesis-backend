@@ -778,7 +778,7 @@ const sessionEnded = async (req, res) => {
 
     chatroom.sessionEnded = true;
 
-    const participantsToKick = chatRoom.participants;
+    const participantsToKick = chatroom.participants;
     // Kick each participant with status "pending"
     for (const participant of participantsToKick) {
       if (participant.status === "pending") {
