@@ -98,3 +98,5 @@ const computerScience = [
   },
   { subjectCode: "COSC 200BNEW", description: "UNDERGRADUATE THESIS II" },
 ];
+
+export { computerScience };
