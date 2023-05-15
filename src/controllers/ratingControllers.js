@@ -6,15 +6,15 @@ const rateParticipants = async (req, res) => {
     const tutorId = req.user._id;
 
     const promises = participants.map(async (participant) => {
-      const tuteeId = participant._id;
+      let tuteeId = participant._id;
 
-      const user = await User.findById(tuteeId);
+      let user = await User.findById(tuteeId);
       if (!user) {
         throw new Error(`User with ID ${tuteeId} not found`);
       }
 
       // Find the index of the tutor's rating for this tutee, if it exists
-      const tuteeRatingIndex = user.ratingsAsTutee.findIndex(
+      let tuteeRatingIndex = user.ratingsAsTutee.findIndex(
         (rating) => rating.tutorId.toString() === tutorId.toString()
       );
 
