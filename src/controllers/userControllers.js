@@ -104,7 +104,14 @@ const getUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const updates = Object.keys(req.body);
-  const allowedUpdates = ["firstName", "lastName", "email", "password"];
+  const allowedUpdates = [
+    "firstName",
+    "lastName",
+    "email",
+    "password",
+    "timeAndDateAvailability",
+    "isAvailable",
+  ];
   const isValidOperation = updates.every((update) =>
     allowedUpdates.includes(update)
   );
