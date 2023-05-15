@@ -110,8 +110,37 @@ async function getMostSearchedTutorAndSubject() {
     {
       $lookup: {
         from: "searches",
-        localField: "firstName",
-        foreignField: "term",
+        let: { firstName: "$firstName", lastName: "$lastName" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $or: [
+                  {
+                    $regexMatch: {
+                      input: "$term",
+                      regex: "$$firstName",
+                      options: "i",
+                    },
+                  },
+                  {
+                    $regexMatch: {
+                      input: "$term",
+                      regex: "$$lastName",
+                      options: "i",
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: "$term",
+              count: { $sum: "$count" },
+            },
+          },
+        ],
         as: "searches",
       },
     },
