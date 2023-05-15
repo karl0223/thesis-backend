@@ -1,6 +1,38 @@
 import Report from "../../models/report.js";
 import User from "../../models/user.js";
 import Search from "../../models/search.js";
+import { computerScience } from "../../utils/subjectsUtils.js";
+
+function searchSubjects(subjects, searchTerm) {
+  // Convert the search term to lowercase for case-insensitive search
+  const searchLowerCase = searchTerm.toLowerCase();
+
+  // Create a Set to store unique subjects
+  const uniqueSubjects = new Set();
+
+  // Iterate over each subject and check for a match
+  subjects.forEach((subject) => {
+    const { subjectCode, description } = subject;
+
+    // Convert subject code and description to lowercase for comparison
+    const subjectCodeLowerCase = subjectCode.toLowerCase();
+    const descriptionLowerCase = description.toLowerCase();
+
+    // Check if subject code or description contains the search term
+    if (
+      subjectCodeLowerCase.includes(searchLowerCase) ||
+      descriptionLowerCase.includes(searchLowerCase)
+    ) {
+      // Add the subject to the unique subjects Set
+      uniqueSubjects.add(subject);
+    }
+  });
+
+  // Convert the unique subjects Set back to an array
+  const uniqueSubjectsArray = Array.from(uniqueSubjects);
+
+  return uniqueSubjectsArray;
+}
 
 // Get the analytics of report module (admin)
 const getReportsAnalytics = async (req, res) => {
@@ -45,8 +77,6 @@ const getTopSearches = async (req, res) => {
       .limit(10)
       .select("-_id term count");
 
-    console.log("topSearches", topSearches);
-    console.log(topSearches);
     return topSearches;
   } catch (err) {
     console.error(err);
@@ -69,42 +99,44 @@ async function getMostSearchedTutorAndSubject() {
     { $group: { _id: "$term", count: { $sum: "$count" } } },
   ]);
 
-  const topSubject = await User.aggregate([
-    { $unwind: "$subjects" },
-    {
-      $lookup: {
-        from: "searches",
-        let: { subjectCode: "$subjects.subjectCode" },
-        pipeline: [
-          {
-            $match: {
-              $expr: { $eq: ["$term", "$$subjectCode"] },
-            },
-          },
-          {
-            $group: {
-              _id: "$term",
-              count: { $sum: "$count" },
-            },
-          },
-        ],
-        as: "searches",
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        firstName: 1,
-        lastName: 1,
-        subjectCode: "$subjects.subjectCode",
-        description: "$subjects.description",
-        subtopics: "$subjects.subtopics",
-        searchCount: { $sum: "$searches.count" },
-      },
-    },
-    { $sort: { searchCount: -1 } },
-    { $limit: 10 },
-  ]);
+  const results = []; // Array to store the results
+  const subjectCollection = {}; // Object to store the subject collection
+
+  for (let i = 0; i < searchTerms.length; i++) {
+    const topSubjectTerm = searchTerms[i]._id;
+    const topSubject = searchSubjects(computerScience, topSubjectTerm);
+
+    for (const subject of topSubject) {
+      const subjectCode = subject.subjectCode;
+      const description = subject.description;
+
+      // Create a unique key for each subject using subjectCode and description
+      const subjectKey = `${subjectCode}-${description}`;
+
+      // Increment the search count or initialize it to 0 if not present
+      subjectCollection[subjectKey] =
+        (subjectCollection[subjectKey] || 0) + searchTerms[i].count;
+    }
+  }
+
+  // Convert the subject collection object into an array of objects
+  for (const subjectKey in subjectCollection) {
+    if (subjectCollection.hasOwnProperty(subjectKey)) {
+      const [subjectCode, description] = subjectKey.split("-");
+      const searchCount = subjectCollection[subjectKey];
+      results.push({ subjectCode, description, searchCount });
+    }
+  }
+
+  // Convert the subject collection object into an array of objects
+  const sortedResults = Object.keys(subjectCollection)
+    .map((subjectKey) => {
+      const [subjectCode, description] = subjectKey.split("-");
+      const searchCount = subjectCollection[subjectKey];
+      return { subjectCode, description, searchCount };
+    })
+    .sort((a, b) => b.searchCount - a.searchCount)
+    .slice(0, 15);
 
   const topTutor = await User.aggregate([
     {
@@ -157,7 +189,7 @@ async function getMostSearchedTutorAndSubject() {
   ]);
 
   return {
-    topSubject: topSubject,
+    topSubject: sortedResults,
     topTutor: topTutor,
   };
 }

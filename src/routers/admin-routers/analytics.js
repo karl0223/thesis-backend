@@ -23,8 +23,6 @@ analyticsRouter.get(
         topSubject,
       };
 
-      console.log(context);
-
       res.render("analytics", context);
     } catch (error) {
       console.error(error);
