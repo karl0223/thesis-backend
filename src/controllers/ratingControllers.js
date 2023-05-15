@@ -5,16 +5,18 @@ const rateParticipants = async (req, res) => {
     const { rating, feedback, participants } = req.body;
     const tutorId = req.user._id;
 
-    const promises = participants.map(async (participant) => {
-      let tuteeId = participant._id;
+    console.log(participants);
 
-      let user = await User.findById(tuteeId);
+    const promises = participants.map(async (participant) => {
+      const tuteeId = participant._id;
+
+      const user = await User.findById(tuteeId);
       if (!user) {
         throw new Error(`User with ID ${tuteeId} not found`);
       }
 
       // Find the index of the tutor's rating for this tutee, if it exists
-      let tuteeRatingIndex = user.ratingsAsTutee.findIndex(
+      const tuteeRatingIndex = user.ratingsAsTutee.findIndex(
         (rating) => rating.tutorId.toString() === tutorId.toString()
       );
 
@@ -34,7 +36,7 @@ const rateParticipants = async (req, res) => {
 
     res.status(200).send("Ratings submitted successfully");
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).send(error.message);
   }
 };
 
