@@ -794,10 +794,35 @@ const sessionEnded = async (req, res) => {
       }
     }
 
+    const participantsToRate = await ChatRoom.findById(chatroom._id)
+      .populate({
+        path: "participants",
+        match: { status: "accepted" },
+        select: "userId",
+        populate: {
+          path: "userId",
+          select: "firstName lastName avatar",
+        },
+      })
+      .exec();
+
+    const ratedParticipants = participantsToRate.participants
+      .filter((participant) => participant.status === "accepted")
+      .map((participant) => ({
+        userId: participant.userId._id,
+        firstName: participant.userId.firstName,
+        lastName: participant.userId.lastName,
+        avatar: participant.userId.avatar,
+      }));
+
     await chatroom.save();
 
-    io.to(roomId).emit("session-ended", { message: "Session Ended", roomId });
-    res.status(200).send("Session Ended");
+    io.to(roomId).emit("session-ended", {
+      message: "Session Ended",
+      ratedParticipants,
+      roomId,
+    });
+    res.status(200).send({ message: "Session Ended", ratedParticipants });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");

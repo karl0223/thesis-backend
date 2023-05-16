@@ -2,7 +2,7 @@ import User from "../models/user.js";
 
 const rateParticipants = async (req, res) => {
   try {
-    const participants = req.body;
+    const { participants } = req.body;
     const tutorId = req.user._id;
 
     console.log(participants);
