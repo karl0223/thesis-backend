@@ -2,34 +2,26 @@ import User from "../models/user.js";
 
 const rateParticipants = async (req, res) => {
   try {
-    const { rating, feedback, participants } = req.body;
+    const participants = req.body;
     const tutorId = req.user._id;
 
     console.log(participants);
 
     const promises = participants.map(async (participant) => {
       const tuteeId = participant._id;
+      const rating = participant.rating;
+      const feedback = participant.feedback;
 
-      const user = await User.findById(tuteeId);
-      if (!user) {
-        throw new Error(`User with ID ${tuteeId} not found`);
-      }
-
-      // Find the index of the tutor's rating for this tutee, if it exists
-      const tuteeRatingIndex = user.ratingsAsTutee.findIndex(
-        (rating) => rating.tutorId.toString() === tutorId.toString()
+      await User.findOneAndUpdate(
+        { _id: tuteeId, "ratingsAsTutee.tutorId": tutorId },
+        {
+          $set: {
+            "ratingsAsTutee.$.value": rating,
+            "ratingsAsTutee.$.feedback": feedback,
+          },
+        },
+        { upsert: true }
       );
-
-      if (tuteeRatingIndex !== -1) {
-        // If there is an existing rating, update it
-        user.ratingsAsTutee[tuteeRatingIndex].value = rating;
-        user.ratingsAsTutee[tuteeRatingIndex].feedback = feedback;
-      } else {
-        // If there is no existing rating, create a new one
-        user.ratingsAsTutee.push({ value: rating, feedback, tutorId });
-      }
-
-      await user.save();
     });
 
     await Promise.all(promises);
@@ -50,21 +42,16 @@ const rateTutor = async (req, res) => {
       throw new Error(`User with ID ${tutorId} not found`);
     }
 
-    // Find the index of the tutee's rating for this tutor, if it exists
-    const tutorRatingIndex = tutor.ratingsAsTutor.findIndex(
-      (rating) => rating.tuteeId.toString() === tuteeId.toString()
+    await User.findOneAndUpdate(
+      { _id: tutorId, "ratingsAsTutor.tuteeId": tuteeId },
+      {
+        $set: {
+          "ratingsAsTutor.$.value": rating,
+          "ratingsAsTutor.$.feedback": feedback,
+        },
+      },
+      { upsert: true }
     );
-
-    if (tutorRatingIndex !== -1) {
-      // If there is an existing rating, update it
-      tutor.ratingsAsTutor[tutorRatingIndex].value = rating;
-      tutor.ratingsAsTutor[tutorRatingIndex].feedback = feedback;
-    } else {
-      // If there is no existing rating, create a new one
-      tutor.ratingsAsTutor.push({ value: rating, feedback, tuteeId });
-    }
-
-    await tutor.save();
 
     res.status(200).send("Rating submitted successfully");
   } catch (error) {
