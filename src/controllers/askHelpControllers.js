@@ -87,7 +87,14 @@ const createRequest = async (req, res) => {
 
     const requestInfo = await HelpRequest.findById(newRequest._id)
       .populate("tutorId", "firstName lastName")
-      .populate("studentId", " firstName lastName");
+      .populate({
+        path: "studentId",
+        select: "firstName lastName",
+        populate: {
+          path: "ratingsAsTutee",
+          select: "value feedback",
+        },
+      });
 
     io.to(tutorSocket).emit("new-request", requestInfo);
     res.send(requestInfo);
