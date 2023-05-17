@@ -85,20 +85,31 @@ const logoutAll = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .populate("ratingsAsTutor", "value")
-      .populate("ratingsAsTutee", "value")
+      .populate({
+        path: "ratingsAsTutor",
+        select: "value feedback tuteeId",
+        populate: {
+          path: "tuteeId",
+          select: "firstName lastName avatar",
+        },
+      })
+      .populate({
+        path: "ratingsAsTutee",
+        select: "value feedback tutorId",
+        populate: {
+          path: "tutorId",
+          select: "firstName lastName avatar",
+        },
+      })
       .exec();
 
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
 
-    await user.save();
-
-    return res.status(200).json(user);
+    res.status(200).json(user);
   } catch (error) {
-    console.error(error);
-    return res.status(500).send("Server error");
+    res.status(400).send(error);
   }
 };
 
