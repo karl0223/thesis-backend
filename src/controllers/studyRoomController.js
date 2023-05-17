@@ -167,6 +167,7 @@ const leaveChatRoom = async (req, res) => {
 
       await ChatRoom.removeParticipant(roomId, userId);
       // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
+
       io.to(roomId).emit("user-left", {
         roomId,
         user: {
@@ -174,6 +175,7 @@ const leaveChatRoom = async (req, res) => {
           firstName: req.user.firstName,
           lastName: req.user.lastName,
         },
+        sessionEnded: chatRoom.sessionEnded,
       });
 
       res.send(`${req.user.firstName} ${req.user.lastName} left the room`);
