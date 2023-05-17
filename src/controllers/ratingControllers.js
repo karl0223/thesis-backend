@@ -5,8 +5,6 @@ const rateParticipants = async (req, res) => {
     const { participants } = req.body;
     const tutorId = req.user._id;
 
-    console.log(participants);
-
     const promises = participants.map(async (participant) => {
       const tuteeId = participant._id;
       const rating = participant.rating;

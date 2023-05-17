@@ -42,7 +42,26 @@ const login = async (req, res) => {
 
     const token = await user.generateAuthToken();
 
-    res.send({ user, token });
+    const userInfo = await User.findById(user._id)
+      .populate({
+        path: "ratingsAsTutor",
+        select: "value feedback tuteeId",
+        populate: {
+          path: "tuteeId",
+          select: "firstName lastName avatar",
+        },
+      })
+      .populate({
+        path: "ratingsAsTutee",
+        select: "value feedback tutorId",
+        populate: {
+          path: "tutorId",
+          select: "firstName lastName avatar",
+        },
+      })
+      .exec();
+
+    res.send({ user: userInfo, token });
   } catch (e) {
     res.status(400).send();
   }
