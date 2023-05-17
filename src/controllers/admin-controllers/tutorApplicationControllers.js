@@ -35,8 +35,6 @@ const getApplication = async (req, res) => {
       userId: req.user._id,
       status: "pending",
     });
-    console.log("Tutor application retrieved successfully!");
-    console.log(tutorApplication);
 
     if (!tutorApplication) {
       return res.status(404).json({ msg: "Tutor application not found" });
@@ -58,7 +56,6 @@ const getAllTutorApplications = async (req, res) => {
     const context = {
       applications: JSON.stringify(tutorApplications),
     };
-    console.log(context);
 
     res.render("pending_tutors", context);
 
@@ -75,8 +72,6 @@ const getTutorApplicationById = async (req, res) => {
     if (!tutorApplication) {
       return res.status(404).json({ msg: "Tutor application not found" });
     }
-    console.log("Tutor application retrieved successfully!");
-    console.log(tutorApplication);
 
     res.json(tutorApplication);
   } catch (err) {
@@ -107,9 +102,6 @@ const createTutorApplication = async (req, res) => {
 
     await tutorApplication.save();
 
-    console.log("Tutor application submitted successfully!");
-    console.log(tutorApplication);
-
     res.json(tutorApplication);
   } catch (err) {
     console.error(err.message);
@@ -139,9 +131,6 @@ const updateTutorApplication = async (req, res) => {
 
     await tutorApplication.save();
 
-    console.log("Tutor application updated successfully!");
-    console.log(tutorApplication);
-
     res.json(tutorApplication);
   } catch (err) {
     console.error(err.message);
@@ -162,9 +151,6 @@ const rejectTutorApplication = async (req, res) => {
       return res.status(404).send("Tutor application not found");
     }
 
-    console.log("Tutor application rejected successfully!");
-    console.log(tutorApplication);
-    console.log(`User ID: ${tutorApplication.userId}`);
     var userSocket = await getUserSocket(tutorApplication.userId);
     if (userSocket) {
       io.emit("tutor-application-rejected", tutorApplication);
@@ -217,9 +203,6 @@ const approveTutorApplication = async (req, res) => {
     if (userSocket) {
       io.emit("tutor-application-approved", tutorApplication);
     }
-
-    console.log("Tutor application approved successfully!");
-    console.log(tutorApplication);
 
     res.redirect("/admin/tutor-application");
   } catch (error) {
