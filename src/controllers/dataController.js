@@ -48,6 +48,22 @@ const getAllTutors = async (req, res) => {
   }
 
   const tutors = await User.find(query)
+    .populate({
+      path: "ratingsAsTutor",
+      select: "value feedback tuteeId",
+      populate: {
+        path: "tuteeId",
+        select: "firstName lastName avatar",
+      },
+    })
+    .populate({
+      path: "ratingsAsTutee",
+      select: "value feedback tutorId",
+      populate: {
+        path: "tutorId",
+        select: "firstName lastName avatar",
+      },
+    })
     .skip((page - 1) * limit)
     .limit(limit);
 
