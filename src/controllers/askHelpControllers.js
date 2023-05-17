@@ -108,7 +108,14 @@ const getRequests = async (req, res) => {
       reqStatus: "pending",
     })
       .populate("tutorId", "firstName lastName")
-      .populate("studentId", "firstName lastName");
+      .populate({
+        path: "studentId",
+        select: "firstName lastName",
+        populate: {
+          path: "ratingsAsTutee",
+          select: "value feedback",
+        },
+      });
 
     res.send(requests);
   } catch (err) {
