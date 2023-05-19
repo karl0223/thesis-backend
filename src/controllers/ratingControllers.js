@@ -10,16 +10,26 @@ const rateParticipants = async (req, res) => {
       const rating = participant.rating;
       const feedback = participant.feedback;
 
-      await User.findOneAndUpdate(
-        { _id: tuteeId, "ratingsAsTutee.tutorId": tutorId },
-        {
-          $set: {
-            "ratingsAsTutee.$.value": rating,
-            "ratingsAsTutee.$.feedback": feedback,
-          },
-        },
-        { upsert: true }
+      const user = await User.findById(tuteeId);
+
+      if (!user) {
+        throw new Error(`User with ID ${tuteeId} not found`);
+      }
+
+      const ratingIndex = user.ratingsAsTutee.findIndex(
+        (rating) => rating.tutorId.toString() === tutorId.toString()
       );
+
+      if (ratingIndex !== -1) {
+        // If there is an existing rating, update it
+        user.ratingsAsTutee[ratingIndex].value = rating;
+        user.ratingsAsTutee[ratingIndex].feedback = feedback;
+      } else {
+        // If there is no existing rating, create a new one
+        user.ratingsAsTutee.push({ value: rating, feedback, tutorId });
+      }
+
+      await user.save();
     });
 
     await Promise.all(promises);
@@ -40,16 +50,21 @@ const rateTutor = async (req, res) => {
       throw new Error(`User with ID ${tutorId} not found`);
     }
 
-    await User.findOneAndUpdate(
-      { _id: tutorId, "ratingsAsTutor.tuteeId": tuteeId },
-      {
-        $set: {
-          "ratingsAsTutor.$.value": rating,
-          "ratingsAsTutor.$.feedback": feedback,
-        },
-      },
-      { upsert: true }
+    // Find the index of the tutee's rating for this tutor, if it exists
+    const tutorRatingIndex = tutor.ratingsAsTutor.findIndex(
+      (rating) => rating.tuteeId.toString() === tuteeId.toString()
     );
+
+    if (tutorRatingIndex !== -1) {
+      // If there is an existing rating, update it
+      tutor.ratingsAsTutor[tutorRatingIndex].value = rating;
+      tutor.ratingsAsTutor[tutorRatingIndex].feedback = feedback;
+    } else {
+      // If there is no existing rating, create a new one
+      tutor.ratingsAsTutor.push({ value: rating, feedback, tuteeId });
+    }
+
+    await tutor.save();
 
     res.status(200).send("Rating submitted successfully");
   } catch (error) {
