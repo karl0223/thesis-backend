@@ -47,12 +47,20 @@ const getAllTutors = async (req, res) => {
     });
   }
 
+  let sortOption = {};
+
+  if (!search) {
+    sortOption = { averageRatingAsTutor: -1 }; // Sort by averageRatingAsTutor in descending order
+  } else {
+    sortOption = { "ratingsAsTutor.subject.averageRating": -1 }; // Sort by subject's average rating in descending order
+  }
+
   const tutors = await User.find(query)
     .populate({
       path: "ratingsAsTutor",
-      select: "value feedback tuteeId",
+      select: "subject value feedback tuteeId",
       populate: {
-        path: "tuteeId",
+        path: "subject.subtopics.subjectRatings.tuteeId",
         select: "firstName lastName avatar",
       },
     })
@@ -65,7 +73,8 @@ const getAllTutors = async (req, res) => {
       },
     })
     .skip((page - 1) * limit)
-    .limit(limit);
+    .limit(limit)
+    .sort(sortOption); // Sort by average rating in descending order
 
   res.json({ tutors, currentPage: page, totalPages, totalTutors });
 };

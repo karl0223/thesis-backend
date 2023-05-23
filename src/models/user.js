@@ -53,43 +53,59 @@ const userSchema = new mongoose.Schema(
       enum: ["tutee", "tutor", "admin"],
       default: "tutee",
     },
+    averageRatingAsTutor: {
+      type: Number,
+      default: 0,
+    },
     ratingsAsTutor: [
       {
         subject: {
           subjectCode: {
             type: String,
-            required: true,
+            required: false,
           },
           description: {
             type: String,
-            required: true,
+            required: false,
           },
           subtopics: [
             {
               name: {
                 type: String,
-                required: true,
+                required: false,
               },
               description: {
                 type: String,
-                required: true,
+                required: false,
+              },
+              subjectRatings: [
+                {
+                  value: {
+                    type: Number,
+                    required: true,
+                    min: 1,
+                    max: 5,
+                  },
+                  feedback: {
+                    type: String,
+                  },
+                  tuteeId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "User",
+                    required: true,
+                  },
+                },
+              ],
+              averageRating: {
+                type: Number,
+                default: 0,
               },
             },
           ],
-        },
-        value: {
-          type: Number,
-          required: true,
-          min: 1,
-          max: 5,
-        },
-        feedback: {
-          type: String,
-        },
-        tuteeId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
+          averageRating: {
+            type: Number,
+            default: 0,
+          },
         },
       },
     ],
