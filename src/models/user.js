@@ -55,6 +55,28 @@ const userSchema = new mongoose.Schema(
     },
     ratingsAsTutor: [
       {
+        subject: {
+          subjectCode: {
+            type: String,
+            required: true,
+          },
+          description: {
+            type: String,
+            required: true,
+          },
+          subtopics: [
+            {
+              name: {
+                type: String,
+                required: true,
+              },
+              description: {
+                type: String,
+                required: true,
+              },
+            },
+          ],
+        },
         value: {
           type: Number,
           required: true,

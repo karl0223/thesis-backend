@@ -42,7 +42,7 @@ const rateParticipants = async (req, res) => {
 
 const rateTutor = async (req, res) => {
   try {
-    const { rating, feedback, tutorId } = req.body;
+    const { subject, rating, feedback, tutorId } = req.body;
     const tuteeId = req.user._id;
 
     const tutor = await User.findById(tutorId);
@@ -52,7 +52,10 @@ const rateTutor = async (req, res) => {
 
     // Find the index of the tutee's rating for this tutor, if it exists
     const tutorRatingIndex = tutor.ratingsAsTutor.findIndex(
-      (rating) => rating.tuteeId.toString() === tuteeId.toString()
+      (rating) =>
+        rating.tuteeId.toString() === tuteeId.toString() &&
+        rating.subject.subjectCode === subject.subjectCode &&
+        rating.subject.subtopics.name === subject.subtopics.name
     );
 
     if (tutorRatingIndex !== -1) {
@@ -61,7 +64,7 @@ const rateTutor = async (req, res) => {
       tutor.ratingsAsTutor[tutorRatingIndex].feedback = feedback;
     } else {
       // If there is no existing rating, create a new one
-      tutor.ratingsAsTutor.push({ value: rating, feedback, tuteeId });
+      tutor.ratingsAsTutor.push({ subject, value: rating, feedback, tuteeId });
     }
 
     await tutor.save();
