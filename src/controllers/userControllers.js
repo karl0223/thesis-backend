@@ -2,17 +2,24 @@ import User from "../models/user.js";
 import { sendVerificationEmail } from "../utils/verifyEmail.js";
 
 const signup = async (req, res) => {
-  const user = new User(req.body);
-  const deviceToken = req.body.deviceToken;
-  const fcmToken = req.body.fcmToken;
-  try {
-    user.devices = [{ deviceToken, fcmToken }];
-    await user.save();
-    await sendVerificationEmail(user);
+  const { email } = req.body;
+  const emailRegex = /^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$/;
 
-    res.status(201).send({ user });
-  } catch (e) {
-    res.status(400).send(e);
+  if (emailRegex.test(email)) {
+    const user = new User(req.body);
+    const deviceToken = req.body.deviceToken;
+    const fcmToken = req.body.fcmToken;
+    try {
+      user.devices = [{ deviceToken, fcmToken }];
+      await user.save();
+      await sendVerificationEmail(user);
+
+      res.status(201).send({ user });
+    } catch (e) {
+      res.status(400).send(e);
+    }
+  } else {
+    res.status(400).send("Invalid email address");
   }
 };
 
