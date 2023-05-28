@@ -96,13 +96,13 @@ const userSchema = new mongoose.Schema(
                   },
                 },
               ],
-              averageRating: {
+              averageSubtopicsRating: {
                 type: Number,
                 default: 0,
               },
             },
           ],
-          averageRating: {
+          averageSubjectsRating: {
             type: Number,
             default: 0,
           },

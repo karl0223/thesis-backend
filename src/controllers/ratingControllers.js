@@ -103,18 +103,18 @@ const rateTutor = async (req, res) => {
         // Update the average rating for the subtopic
         tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
           subtopicIndex
-        ].averageRating = subtopicAverageRating.toFixed(2);
+        ].averageSubtopicsRating = subtopicAverageRating.toFixed(2);
 
         // Calculate average rating for the subject
         const subjectSubtopicAverages = tutor.ratingsAsTutor[
           subjectIndex
-        ].subject.subtopics.map((subtopic) => subtopic.averageRating);
+        ].subject.subtopics.map((subtopic) => subtopic.averageSubtopicsRating);
         const subjectAverageRating =
           subjectSubtopicAverages.reduce((sum, value) => sum + value, 0) /
           subjectSubtopicAverages.length;
 
         // Update the average rating for the subject
-        tutor.ratingsAsTutor[subjectIndex].subject.averageRating =
+        tutor.ratingsAsTutor[subjectIndex].subject.averageSubjectsRating =
           subjectAverageRating.toFixed(2);
       } else {
         // If the subtopic does not exist, create a new entry
@@ -128,7 +128,7 @@ const rateTutor = async (req, res) => {
               tuteeId,
             },
           ],
-          averageRating: rating, // Set initial average rating as the first rating value
+          averageSubtopicsRating: rating, // Set initial average rating as the first rating value
         };
 
         tutor.ratingsAsTutor[subjectIndex].subject.subtopics.push(newSubtopic);
@@ -136,13 +136,13 @@ const rateTutor = async (req, res) => {
         // Calculate average rating for the subject
         const subjectSubtopicAverages = tutor.ratingsAsTutor[
           subjectIndex
-        ].subject.subtopics.map((subtopic) => subtopic.averageRating);
+        ].subject.subtopics.map((subtopic) => subtopic.averageSubtopicsRating);
         const subjectAverageRating =
           subjectSubtopicAverages.reduce((sum, value) => sum + value, 0) /
           subjectSubtopicAverages.length;
 
         // Update the average rating for the subject
-        tutor.ratingsAsTutor[subjectIndex].subject.averageRating =
+        tutor.ratingsAsTutor[subjectIndex].subject.averageSubjectsRating =
           subjectAverageRating.toFixed(2);
       }
     } else {
@@ -162,10 +162,10 @@ const rateTutor = async (req, res) => {
                   tuteeId,
                 },
               ],
-              averageRating: rating, // Set initial average rating as the first rating value
+              averageSubtopicsRating: rating, // Set initial average rating as the first rating value
             },
           ],
-          averageRating: rating, // Set initial average rating as the first rating value
+          averageSubjectsRating: rating, // Set initial average rating as the first rating value
         },
       };
 
@@ -174,7 +174,7 @@ const rateTutor = async (req, res) => {
 
     // Calculate average rating for all subjects
     const subjectAverages = tutor.ratingsAsTutor.map(
-      (entry) => entry.subject.averageRating
+      (entry) => entry.subject.averageSubjectsRating
     );
     const overallAverageRating =
       subjectAverages.reduce((sum, value) => sum + value, 0) /

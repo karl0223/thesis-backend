@@ -60,7 +60,7 @@ const getAllTutors = async (req, res) => {
       path: "ratingsAsTutor",
       select: "subject value feedback tuteeId",
       populate: {
-        path: "subject.subtopics.subjectRatings.tuteeId",
+        path: "subject.subtopics.subtopicsRatings.tuteeId",
         select: "firstName lastName avatar",
       },
     })
