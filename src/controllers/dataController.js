@@ -52,7 +52,7 @@ const getAllTutors = async (req, res) => {
   if (!search) {
     sortOption = { averageRatingAsTutor: -1 }; // Sort by averageRatingAsTutor in descending order
   } else {
-    sortOption = { "ratingsAsTutor.subject.averageRating": -1 }; // Sort by subject's average rating in descending order
+    sortOption = { "ratingsAsTutor.subject.averageSubjectsRating": -1 }; // Sort by subject's average rating in descending order
   }
 
   const tutors = await User.find(query)

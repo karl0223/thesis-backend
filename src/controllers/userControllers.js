@@ -52,9 +52,9 @@ const login = async (req, res) => {
     const userInfo = await User.findById(user._id)
       .populate({
         path: "ratingsAsTutor",
-        select: "value feedback tuteeId",
+        select: "subject value feedback tuteeId",
         populate: {
-          path: "tuteeId",
+          path: "subject.subtopics.subtopicsRatings.tuteeId",
           select: "firstName lastName avatar",
         },
       })
@@ -113,9 +113,9 @@ const getUser = async (req, res) => {
     const user = await User.findById(req.user._id)
       .populate({
         path: "ratingsAsTutor",
-        select: "value feedback tuteeId",
+        select: "subject value feedback tuteeId",
         populate: {
-          path: "tuteeId",
+          path: "subject.subtopics.subtopicsRatings.tuteeId",
           select: "firstName lastName avatar",
         },
       })
