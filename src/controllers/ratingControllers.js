@@ -67,7 +67,7 @@ const rateTutor = async (req, res) => {
         // If the subtopic exists, find the rating index for the tutee
         const ratingIndex = tutor.ratingsAsTutor[
           subjectIndex
-        ].subject.subtopics[subtopicIndex].subjectRatings.findIndex(
+        ].subject.subtopics[subtopicIndex].subtopicsRatings.findIndex(
           (rating) => rating.tuteeId.toString() === tuteeId.toString()
         );
 
@@ -75,15 +75,15 @@ const rateTutor = async (req, res) => {
           // If there is an existing rating, update it
           tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
             subtopicIndex
-          ].subjectRatings[ratingIndex].value = rating;
+          ].subtopicsRatings[ratingIndex].value = rating;
           tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
             subtopicIndex
-          ].subjectRatings[ratingIndex].feedback = feedback;
+          ].subtopicsRatings[ratingIndex].feedback = feedback;
         } else {
           // If there is no existing rating, create a new one
           tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
             subtopicIndex
-          ].subjectRatings.push({
+          ].subtopicsRatings.push({
             value: rating,
             feedback,
             tuteeId,
@@ -93,7 +93,7 @@ const rateTutor = async (req, res) => {
         // Calculate average rating for the subtopic
         const subtopicRatings = tutor.ratingsAsTutor[
           subjectIndex
-        ].subject.subtopics[subtopicIndex].subjectRatings.map(
+        ].subject.subtopics[subtopicIndex].subtopicsRatings.map(
           (rating) => rating.value
         );
         const subtopicAverageRating =
@@ -121,7 +121,7 @@ const rateTutor = async (req, res) => {
         const newSubtopic = {
           name: subject.subtopics[0].name,
           description: subject.subtopics[0].description,
-          subjectRatings: [
+          subtopicsRatings: [
             {
               value: rating,
               feedback,
@@ -155,7 +155,7 @@ const rateTutor = async (req, res) => {
             {
               name: subject.subtopics[0].name,
               description: subject.subtopics[0].description,
-              subjectRatings: [
+              subtopicsRatings: [
                 {
                   value: rating,
                   feedback,

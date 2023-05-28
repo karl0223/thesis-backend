@@ -78,7 +78,7 @@ const userSchema = new mongoose.Schema(
                 type: String,
                 required: false,
               },
-              subjectRatings: [
+              subtopicsRatings: [
                 {
                   value: {
                     type: Number,
