@@ -626,6 +626,9 @@ const acceptInvite = async (req, res) => {
 const getUserChatRooms = async (req, res) => {
   try {
     const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     // Find the chat room the user has joined or owns
     const chatRoom = await ChatRoom.findOne({
@@ -648,14 +651,27 @@ const getUserChatRooms = async (req, res) => {
       return res.status(404).send("Chat room not found");
     }
 
-    // Fetch the messages for the chat room
+    // Fetch the messages for the chat room with pagination
     const messages = await Message.find({ roomId: chatRoom._id })
+      .populate("userId", "firstName lastName")
+      .populate("roomId", "name")
       .sort("-createdAt")
-      .limit(50);
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const totalCount = await Message.countDocuments({
+      roomId: chatRoom._id,
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
       ...chatRoom.toObject(),
-      messages: messages.reverse(),
+      messages,
+      page,
+      totalPages,
+      totalCount,
     });
   } catch (err) {
     console.error(err);
