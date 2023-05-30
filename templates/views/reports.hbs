@@ -17,7 +17,29 @@
                                 </div>
                             </div>
                         </div>
-                        <table class="table data-table mt-4">
+                        <div class="row mt-4">
+                            <div class="col-md-3">
+                                <label for="statusSelect" class="form-label">Select Status:</label>
+                                <select id="statusSelect" class="form-select" onchange="filterReports()">
+                                    <option value="">All</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="dismissed">Dismissed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="categorySelect" class="form-label">Select Category:</label>
+                                <select id="categorySelect" class="form-select" onchange="filterReports()">
+                                    <option value="">All</option>
+                                    <option value="spam">Spam</option>
+                                    <option value="harassment">Harassment</option>
+                                    <option value="inappropriate content">Inappropriate Content</option>
+                                    <option value="other">Other</option>
+                                    <!-- Add more category options as needed -->
+                                </select>
+                            </div>
+                        </div>
+                        <table id="reportsTable" class="table data-table mt-4">
                             <thead>
                                 <tr>
                                     <th>Reporter</th>
@@ -30,7 +52,7 @@
                             </thead>
                             <tbody>
                                 {{#each reports}}
-                                <tr>
+                                <tr data-status="{{status}}" data-category="{{category}}">
                                     <td>{{reporter.firstName}} {{reporter.lastName}}</td>
                                     <td>{{reportedUser.firstName}} {{reportedUser.lastName}}</td>
                                     <td>{{content}}</td>
@@ -111,6 +133,25 @@
             $(table).DataTable();
         });
     });
+</script>
+
+<script>
+    function filterReports() {
+        const statusSelect = document.getElementById('statusSelect');
+        const categorySelect = document.getElementById('categorySelect');
+        const selectedStatus = statusSelect.value;
+        const selectedCategory = categorySelect.value;
+
+        const rows = document.querySelectorAll('#reportsTable tbody tr');
+
+        rows.forEach((row) => {
+            const status = row.getAttribute('data-status');
+            const category = row.getAttribute('data-category');
+            const shouldShow = (selectedStatus === '' || selectedStatus === status) &&
+                (selectedCategory === '' || selectedCategory === category);
+            row.style.display = shouldShow ? 'table-row' : 'none';
+        });
+    }
 </script>
 
 <script>

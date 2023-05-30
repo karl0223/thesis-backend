@@ -55,6 +55,9 @@ hbs.registerHelper("tutorRequestPrint", tutorRequestPrint);
 hbs.registerHelper("printEmptyTr", printEmptyTr);
 hbs.registerHelper("parseAsHtml", parseAsHtmlHelper);
 hbs.registerHelper("createModals", createModals);
+hbs.registerHelper("eq", function (a, b) {
+  return a === b;
+});
 
 app.set("socketio", io);
 app.use(express.json());
