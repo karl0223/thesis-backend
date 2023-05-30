@@ -1,11 +1,12 @@
 import express from "express";
-import multer from "multer";
-import sharp from "sharp";
 import User from "../models/user.js";
 import { auth } from "../middleware/auth.js";
 import {
   signup,
   login,
+  forgotPassword,
+  renderResetPasswordPage,
+  resetPassword,
   logout,
   logoutAll,
   getUser,
@@ -23,6 +24,12 @@ userRouter.post("/api/users/signup", signup);
 
 // verify email
 userRouter.get("/api/users/verify", verifyEmail);
+
+userRouter.get("/api/reset-password", renderResetPasswordPage);
+
+userRouter.post("/api/forgot-password", forgotPassword);
+
+userRouter.post("/api/reset-password", resetPassword);
 
 // user login
 userRouter.post("/api/users/login", login);

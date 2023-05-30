@@ -201,6 +201,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpires: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -215,47 +221,11 @@ userSchema.methods.toJSON = function () {
   delete userObject.tokens;
   delete userObject.devices;
   delete userObject.verificationToken;
+  delete userObject.resetPasswordToken;
+  delete userObject.resetPasswordExpires;
 
   return userObject;
 };
-
-userSchema.virtual("currentRoleRating").get(function () {
-  const role = this.role;
-  const ratings = this.ratings.filter((rating) => rating.role === role);
-  if (ratings.length === 0) {
-    return 0;
-  }
-  const sum = ratings.reduce((acc, curr) => acc + curr.value, 0);
-  return sum / ratings.length;
-});
-
-userSchema.virtual("averageRatingsAsTutor").get(function () {
-  const tutorRatings = this.ratingsAsTutor.filter(
-    (rating) => rating.role === "tutor"
-  );
-  if (tutorRatings.length === 0) {
-    return 0;
-  }
-  const sum = tutorRatings.reduce((acc, curr) => acc + curr.value, 0);
-  const average = sum / tutorRatings.length;
-  return average;
-});
-
-userSchema.virtual("averageRatingsAsTutee").get(function () {
-  const tuteeRatings = this.ratingsAsTutee.filter(
-    (rating) => rating.role === "tutee"
-  );
-  if (tuteeRatings.length === 0) {
-    return 0;
-  }
-  const sum = tuteeRatings.reduce((acc, curr) => acc + curr.value, 0);
-  const average = sum / tuteeRatings.length;
-  return average;
-});
-
-// userSchema.methods.addRating = function (role, value, feedback) {
-//   this.ratings.push({ role, value, feedback });
-// };
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
@@ -265,6 +235,32 @@ userSchema.methods.generateAuthToken = async function () {
   await user.save();
 
   return token;
+};
+
+userSchema.methods.generateResetPasswordToken = async function () {
+  const user = this;
+  const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
+  user.resetPasswordToken = token;
+  user.resetPasswordExpires = Date.now() + 3600000; // Set the expiration time to 1 hour from now
+  await user.save();
+
+  return token;
+};
+
+userSchema.statics.findByResetPasswordToken = async (token) => {
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new Error("Invalid or expired reset password token.");
+  }
+
+  return user;
 };
 
 userSchema.statics.findByCredentials = async (email, password) => {
@@ -292,13 +288,6 @@ userSchema.pre("save", async function (next) {
   }
   next();
 });
-
-// Delete user tasks when user is removed
-// userSchema.pre("remove", async function (next) {
-//   const user = this;
-//   await Task.deleteMany({ owner: user._id });
-//   next();
-// });
 
 const User = mongoose.model("User", userSchema);
 

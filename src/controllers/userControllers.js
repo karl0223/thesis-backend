@@ -1,5 +1,8 @@
 import User from "../models/user.js";
-import { sendVerificationEmail } from "../utils/verifyEmail.js";
+import {
+  sendVerificationEmail,
+  sendResetPasswordEmail,
+} from "../utils/verifyEmail.js";
 
 const signup = async (req, res) => {
   const { email } = req.body;
@@ -71,6 +74,57 @@ const login = async (req, res) => {
     res.send({ user: userInfo, token });
   } catch (e) {
     res.status(400).send();
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Find the user by their email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate the reset password token
+    const resetToken = await user.generateResetPasswordToken();
+
+    await sendResetPasswordEmail(resetToken, user.email);
+
+    res.json({ message: "Reset password token sent to your email" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to generate reset password token" });
+  }
+};
+
+const renderResetPasswordPage = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    res.render("reset_password", { resetToken: token });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { password } = req.body;
+
+    // Find the user by the reset password token
+    const user = await User.findByResetPasswordToken(token);
+
+    // Update the user's password
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.render("reset_success");
+  } catch (error) {
+    res.render("error");
   }
 };
 
@@ -196,6 +250,9 @@ const deleteUser = async (req, res) => {
 export {
   signup,
   login,
+  forgotPassword,
+  renderResetPasswordPage,
+  resetPassword,
   logout,
   logoutAll,
   getUser,
