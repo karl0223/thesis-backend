@@ -8,10 +8,12 @@ const userSchema = new mongoose.Schema(
     firstName: {
       type: String,
       required: true,
+      index: true,
     },
     lastName: {
       type: String,
       required: true,
+      index: true,
     },
     email: {
       type: String,
@@ -174,6 +176,7 @@ const userSchema = new mongoose.Schema(
         },
         "Subjects are only allowed for tutors",
       ],
+      index: true,
     },
     devices: [
       {

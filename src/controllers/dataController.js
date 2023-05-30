@@ -1,6 +1,6 @@
 import User from "../models/user.js";
 import purify from "../utils/domPurify.js";
-import { normalizeText, termCounts } from "../utils/searchUtils.js";
+import { termCounts, combinedSearchTerms } from "../utils/searchUtils.js";
 
 const getAllTutors = async (req, res) => {
   const { page: rawPage = 1, limit: rawLimit = 10, search } = req.query;
@@ -16,13 +16,12 @@ const getAllTutors = async (req, res) => {
 
   if (search) {
     const sanitizedSearch = purify.sanitize(search);
-    const searchTerms = sanitizedSearch.split(/\s+/);
+    const searchTermsArray = sanitizedSearch.split(/\s+/);
+    const searchTerms = await combinedSearchTerms(searchTermsArray);
 
     termCounts(searchTerms);
 
-    const searchRegexes = searchTerms.map(
-      (term) => new RegExp(normalizeText(term), "i")
-    );
+    const searchRegexes = searchTerms.map((term) => new RegExp(term, "i"));
 
     query.$or = [
       { firstName: { $in: searchRegexes } },
@@ -32,6 +31,10 @@ const getAllTutors = async (req, res) => {
       { "subjects.subtopics.name": { $in: searchRegexes } },
       { "subjects.subtopics.description": { $in: searchRegexes } },
     ];
+
+    console.log(searchRegexes);
+    console.log("Sanitized Search: ", sanitizedSearch);
+    console.log("Search Terms: ", searchTerms);
   }
 
   const totalTutors = await User.countDocuments(query);
