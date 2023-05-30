@@ -44,7 +44,7 @@ const getReportsAnalytics = async () => {
   const harassmentReports = await Report.countDocuments({
     category: "harassment",
   });
-  const inappropriateReports = await Report.countDocuments({
+  const inappropriateContentReports = await Report.countDocuments({
     category: "inappropriate content",
   });
   const otherReports = await Report.countDocuments({ category: "other" });
@@ -52,16 +52,18 @@ const getReportsAnalytics = async () => {
   // Calculate the number of resolved and pending reports
   const resolvedReports = await Report.countDocuments({ status: "resolved" });
   const pendingReports = await Report.countDocuments({ status: "pending" });
+  const dismissedReports = await Report.countDocuments({ status: "dismissed" });
 
   // Return the analytics data as JSON
   const reportData = {
     totalReports,
     spamReports,
     harassmentReports,
-    inappropriateReports,
+    inappropriateContentReports,
     otherReports,
     resolvedReports,
     pendingReports,
+    dismissedReports,
   };
 
   return reportData;

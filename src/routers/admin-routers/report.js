@@ -13,13 +13,13 @@ const reportRouter = express.Router();
 reportRouter.get("/admin/reports", webAuth, webAdminAuth, getAllReports);
 
 // update report status (admin)
-reportRouter.put("/admin/reports/:id", webAuth, webAdminAuth, updateReport);
+reportRouter.patch("/admin/reports/:id", webAuth, webAdminAuth, updateReport);
 
 // Get all reports (admin)
 reportRouter.get("/api/reports", auth, getAllReports);
 
 // update report status (admin)
-reportRouter.put("/api/reports/:id", auth, updateReport);
+reportRouter.patch("/api/reports/:id", auth, updateReport);
 
 // report user
 reportRouter.post("/api/report", auth, reportUser);

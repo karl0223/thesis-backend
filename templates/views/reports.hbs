@@ -38,10 +38,10 @@
                                     <td>{{status}}</td>
                                     <td>{{formattedDate}}</td>
                                     <td>
-                                        <button class="btn btn-primary">Action 1</button>
+                                        <button class="btn btn-primary">Action</button>
                                     </td>
                                     <td>
-                                        <button class="btn btn-danger">Action 2</button>
+                                        <button class="btn btn-danger" onclick="dismissReport('{{_id}}')">Dismiss</button>
                                     </td>
                                 </tr>
                                 {{/each}}
@@ -113,13 +113,42 @@
     });
 </script>
 
+<script>
+    // Function to handle the Dismiss button click event
+    function dismissReport(reportId) {
+        // Create a JSON payload with the status field set to "dismissed"
+        const payload = {
+            status: "dismissed"
+        };
+
+        // Send a PATCH request to update the report status
+        $.ajax({
+            url: `/admin/reports/${reportId}`,
+            type: "PATCH",
+            data: JSON.stringify(payload),
+            contentType: "application/json",
+            success: function (response) {
+                // Handle the success response, if needed
+                console.log("Report dismissed successfully.");
+
+                location.reload();
+            },
+            error: function (xhr, status, error) {
+                // Handle the error response, if needed
+                console.error("Error dismissing report:", error);
+            }
+        });
+    }
+</script>
+
+
 <style>
     .chart-container {
         position: relative;
     }
     #reportDataChart {
-        height: 20%;
-        width: 100%;
+        height: 50%;
+        width: 50%;
     }
 </style>
 
