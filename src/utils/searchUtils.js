@@ -8,12 +8,10 @@ function countTerms(terms) {
   const termCounts = {};
 
   for (const term of terms) {
-    const normalizedTerm = normalizeText(term);
-
-    if (termCounts[normalizedTerm]) {
-      termCounts[normalizedTerm]++;
+    if (termCounts[term]) {
+      termCounts[term]++;
     } else {
-      termCounts[normalizedTerm] = 1;
+      termCounts[term] = 1;
     }
   }
 
@@ -32,4 +30,33 @@ async function termCounts(searchTerms) {
   }
 }
 
-export { normalizeText, countTerms, termCounts };
+const combinedSearchTerms = async (searchTerms) => {
+  const combinedSearchTerms = [];
+  let combinedTerm = "";
+
+  for (let i = 0; i < searchTerms.length; i++) {
+    const term = searchTerms[i];
+
+    if (isNaN(term)) {
+      // If the term is a string
+      if (combinedTerm !== "") {
+        // If there are previous combined terms, push them to the result array
+        combinedSearchTerms.push(combinedTerm.trim());
+        combinedTerm = "";
+      }
+      combinedTerm += " " + term;
+    } else {
+      // If the term is a number
+      combinedTerm += " " + term;
+    }
+  }
+
+  if (combinedTerm !== "") {
+    // Push the last combined term if any
+    combinedSearchTerms.push(combinedTerm.trim());
+  }
+
+  return combinedSearchTerms;
+};
+
+export { normalizeText, countTerms, termCounts, combinedSearchTerms };

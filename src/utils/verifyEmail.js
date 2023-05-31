@@ -33,13 +33,52 @@ async function sendVerificationEmail(user) {
     to: user.email,
     subject: "Please verify your email address",
     html: `
+    <div style="max-width: 600px; margin: auto;">
+    <div style="background-color: #f2f2f2; padding: 20px; text-align: center;">
+      <h1>Welcome to Lift App</h1>
+      <p>Please click the button below to verify your email address:</p>
+      <div style="margin-top: 20px;">
+        <a href="${verificationUrl}" style="background-color: #008CBA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Verify Email Address</a>
+      </div>
+      <!--<p style="margin-top: 20px;">Email: ${user.email}</p>-->
+      <!--<p style="margin-top: 5px;">Password: liftapp123</p>-->
+      <p style="margin-top: 20px;">To download the Lift App, please visit our website:</p>
+      <div style="margin-top: 10px;">
+        <a href="bit.ly/cvsu-lft" style="background-color: #008CBA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Download the Lift App</a>
+      </div>
+    </div>
+  </div>
+    `,
+  };
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+      return true;
+    } else {
+      console.log("Email sent: " + info.response);
+      return false;
+    }
+  });
+}
+
+async function sendResetPasswordEmail(resetToken, email) {
+  const resetUrl = `https://liftapp.onrender.com/api/reset-password?token=${resetToken}`;
+
+  const mailOptions = {
+    from: "noreply@example.com",
+    to: email,
+    subject: "Reset Your Password",
+    html: `
       <div style="max-width: 600px; margin: auto;">
         <div style="background-color: #f2f2f2; padding: 20px; text-align: center;">
-          <h1>Welcome to Lift App</h1>
-          <p>Please click the button below to verify your email address:</p>
+          <h1>Reset Your Password</h1>
+          <p>You have requested to reset your password. Please click the button below to reset your password:</p>
           <div style="margin-top: 20px;">
-            <a href="${verificationUrl}" style="background-color: #008CBA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Verify Email Address</a>
+            <a href="${resetUrl}" style="background-color: #008CBA; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Reset Password</a>
           </div>
+          <p>If you did not request this password reset, you can safely ignore this email.</p>
+          <p class="signature">Thank you,<br>The Lift App Team</p>
         </div>
       </div>
     `,
@@ -82,7 +121,7 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-export { sendVerificationEmail, verifyEmail };
+export { sendVerificationEmail, verifyEmail, sendResetPasswordEmail };
 
 // USING MAILGUN
 

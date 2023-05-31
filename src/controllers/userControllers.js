@@ -1,18 +1,28 @@
 import User from "../models/user.js";
-import { sendVerificationEmail } from "../utils/verifyEmail.js";
+import {
+  sendVerificationEmail,
+  sendResetPasswordEmail,
+} from "../utils/verifyEmail.js";
 
 const signup = async (req, res) => {
-  const user = new User(req.body);
-  const deviceToken = req.body.deviceToken;
-  const fcmToken = req.body.fcmToken;
-  try {
-    user.devices = [{ deviceToken, fcmToken }];
-    await user.save();
-    await sendVerificationEmail(user);
+  const { email } = req.body;
+  const emailRegex = /^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$/;
 
-    res.status(201).send({ user });
-  } catch (e) {
-    res.status(400).send(e);
+  if (emailRegex.test(email)) {
+    const user = new User(req.body);
+    const deviceToken = req.body.deviceToken;
+    const fcmToken = req.body.fcmToken;
+    try {
+      user.devices = [{ deviceToken, fcmToken }];
+      await user.save();
+      await sendVerificationEmail(user);
+
+      res.status(201).send({ user });
+    } catch (e) {
+      res.status(400).send(e);
+    }
+  } else {
+    res.status(400).send("Invalid email address");
   }
 };
 
@@ -45,9 +55,9 @@ const login = async (req, res) => {
     const userInfo = await User.findById(user._id)
       .populate({
         path: "ratingsAsTutor",
-        select: "value feedback tuteeId",
+        select: "subject value feedback tuteeId",
         populate: {
-          path: "tuteeId",
+          path: "subject.subtopics.subtopicsRatings.tuteeId",
           select: "firstName lastName avatar",
         },
       })
@@ -64,6 +74,57 @@ const login = async (req, res) => {
     res.send({ user: userInfo, token });
   } catch (e) {
     res.status(400).send();
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Find the user by their email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate the reset password token
+    const resetToken = await user.generateResetPasswordToken();
+
+    await sendResetPasswordEmail(resetToken, user.email);
+
+    res.json({ message: "Reset password token sent to your email" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to generate reset password token" });
+  }
+};
+
+const renderResetPasswordPage = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    res.render("reset_password", { resetToken: token });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { password } = req.body;
+
+    // Find the user by the reset password token
+    const user = await User.findByResetPasswordToken(token);
+
+    // Update the user's password
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.render("reset_success");
+  } catch (error) {
+    res.render("error");
   }
 };
 
@@ -106,9 +167,9 @@ const getUser = async (req, res) => {
     const user = await User.findById(req.user._id)
       .populate({
         path: "ratingsAsTutor",
-        select: "value feedback tuteeId",
+        select: "subject value feedback tuteeId",
         populate: {
-          path: "tuteeId",
+          path: "subject.subtopics.subtopicsRatings.tuteeId",
           select: "firstName lastName avatar",
         },
       })
@@ -189,6 +250,9 @@ const deleteUser = async (req, res) => {
 export {
   signup,
   login,
+  forgotPassword,
+  renderResetPasswordPage,
+  resetPassword,
   logout,
   logoutAll,
   getUser,

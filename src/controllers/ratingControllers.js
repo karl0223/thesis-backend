@@ -42,7 +42,7 @@ const rateParticipants = async (req, res) => {
 
 const rateTutor = async (req, res) => {
   try {
-    const { rating, feedback, tutorId } = req.body;
+    const { subject, rating, feedback, tutorId } = req.body;
     const tuteeId = req.user._id;
 
     const tutor = await User.findById(tutorId);
@@ -50,19 +50,138 @@ const rateTutor = async (req, res) => {
       throw new Error(`User with ID ${tutorId} not found`);
     }
 
-    // Find the index of the tutee's rating for this tutor, if it exists
-    const tutorRatingIndex = tutor.ratingsAsTutor.findIndex(
-      (rating) => rating.tuteeId.toString() === tuteeId.toString()
+    // Find the subject index for the given subjectCode
+    const subjectIndex = tutor.ratingsAsTutor.findIndex(
+      (entry) => entry.subject.subjectCode === subject.subjectCode
     );
 
-    if (tutorRatingIndex !== -1) {
-      // If there is an existing rating, update it
-      tutor.ratingsAsTutor[tutorRatingIndex].value = rating;
-      tutor.ratingsAsTutor[tutorRatingIndex].feedback = feedback;
+    if (subjectIndex !== -1) {
+      // If the subject exists, find the subtopic index for the given subtopicName
+      const subtopicIndex = tutor.ratingsAsTutor[
+        subjectIndex
+      ].subject.subtopics.findIndex(
+        (subtopic) => subtopic.name === subject.subtopics[0].name
+      );
+
+      if (subtopicIndex !== -1) {
+        // If the subtopic exists, find the rating index for the tutee
+        const ratingIndex = tutor.ratingsAsTutor[
+          subjectIndex
+        ].subject.subtopics[subtopicIndex].subtopicsRatings.findIndex(
+          (rating) => rating.tuteeId.toString() === tuteeId.toString()
+        );
+
+        if (ratingIndex !== -1) {
+          // If there is an existing rating, update it
+          tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
+            subtopicIndex
+          ].subtopicsRatings[ratingIndex].value = rating;
+          tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
+            subtopicIndex
+          ].subtopicsRatings[ratingIndex].feedback = feedback;
+        } else {
+          // If there is no existing rating, create a new one
+          tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
+            subtopicIndex
+          ].subtopicsRatings.push({
+            value: rating,
+            feedback,
+            tuteeId,
+          });
+        }
+
+        // Calculate average rating for the subtopic
+        const subtopicRatings = tutor.ratingsAsTutor[
+          subjectIndex
+        ].subject.subtopics[subtopicIndex].subtopicsRatings.map(
+          (rating) => rating.value
+        );
+        const subtopicAverageRating =
+          subtopicRatings.reduce((sum, value) => sum + value, 0) /
+          subtopicRatings.length;
+
+        // Update the average rating for the subtopic
+        tutor.ratingsAsTutor[subjectIndex].subject.subtopics[
+          subtopicIndex
+        ].averageSubtopicsRating = subtopicAverageRating.toFixed(2);
+
+        // Calculate average rating for the subject
+        const subjectSubtopicAverages = tutor.ratingsAsTutor[
+          subjectIndex
+        ].subject.subtopics.map((subtopic) => subtopic.averageSubtopicsRating);
+        const subjectAverageRating =
+          subjectSubtopicAverages.reduce((sum, value) => sum + value, 0) /
+          subjectSubtopicAverages.length;
+
+        // Update the average rating for the subject
+        tutor.ratingsAsTutor[subjectIndex].subject.averageSubjectsRating =
+          subjectAverageRating.toFixed(2);
+      } else {
+        // If the subtopic does not exist, create a new entry
+        const newSubtopic = {
+          name: subject.subtopics[0].name,
+          description: subject.subtopics[0].description,
+          subtopicsRatings: [
+            {
+              value: rating,
+              feedback,
+              tuteeId,
+            },
+          ],
+          averageSubtopicsRating: rating, // Set initial average rating as the first rating value
+        };
+
+        tutor.ratingsAsTutor[subjectIndex].subject.subtopics.push(newSubtopic);
+
+        // Calculate average rating for the subject
+        const subjectSubtopicAverages = tutor.ratingsAsTutor[
+          subjectIndex
+        ].subject.subtopics.map((subtopic) => subtopic.averageSubtopicsRating);
+        const subjectAverageRating =
+          subjectSubtopicAverages.reduce((sum, value) => sum + value, 0) /
+          subjectSubtopicAverages.length;
+
+        // Update the average rating for the subject
+        tutor.ratingsAsTutor[subjectIndex].subject.averageSubjectsRating =
+          subjectAverageRating.toFixed(2);
+      }
     } else {
-      // If there is no existing rating, create a new one
-      tutor.ratingsAsTutor.push({ value: rating, feedback, tuteeId });
+      // If the subject does not exist, create a new entry
+      const newSubject = {
+        subject: {
+          subjectCode: subject.subjectCode,
+          description: subject.description,
+          subtopics: [
+            {
+              name: subject.subtopics[0].name,
+              description: subject.subtopics[0].description,
+              subtopicsRatings: [
+                {
+                  value: rating,
+                  feedback,
+                  tuteeId,
+                },
+              ],
+              averageSubtopicsRating: rating, // Set initial average rating as the first rating value
+            },
+          ],
+          averageSubjectsRating: rating, // Set initial average rating as the first rating value
+        },
+      };
+
+      tutor.ratingsAsTutor.push(newSubject);
     }
+
+    // Calculate average rating for all subjects
+    const subjectAverages = tutor.ratingsAsTutor.map(
+      (entry) => entry.subject.averageSubjectsRating
+    );
+    const overallAverageRating =
+      subjectAverages.reduce((sum, value) => sum + value, 0) /
+      subjectAverages.length;
+
+    // Update the average rating for the tutor
+    tutor.averageRatingAsTutor = overallAverageRating.toFixed(2);
 
     await tutor.save();
 

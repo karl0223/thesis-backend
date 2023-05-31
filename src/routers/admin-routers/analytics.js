@@ -1,4 +1,5 @@
 import express from "express";
+import { auth } from "../../middleware/auth.js";
 import { webAuth, webAdminAuth } from "../../middleware/webAdminAuth.js";
 import {
   getReportsAnalytics,
@@ -32,12 +33,12 @@ analyticsRouter.get(
 );
 
 // Get the analytics of report module
-analyticsRouter.get(
-  "/api/analytics/reports",
-  webAuth,
-  webAdminAuth,
-  getReportsAnalytics
-);
+// analyticsRouter.get(
+//   "/api/analytics/reports",
+//   webAuth,
+//   webAdminAuth,
+//   getReportsAnalytics
+// );
 
 analyticsRouter.get(
   "/api/analytics/top-searches",
@@ -55,12 +56,11 @@ analyticsRouter.get(
 
 analyticsRouter.get(
   "/api/analytics/most-searched-tutor-subject",
-  webAuth,
-  webAdminAuth,
+  auth,
   async (req, res) => {
     try {
       const result = await getMostSearchedTutorAndSubject();
-      res.render("analytics", { result });
+      res.json(result);
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Internal server error" });

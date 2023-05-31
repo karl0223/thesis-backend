@@ -1,0 +1,196 @@
+{{> header}}
+
+<main class="mt-5 pt-3">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="me-2"><i class="bi bi-bar-chart-fill"></i></span>
+                        Reports
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="chart-container">
+                                    <canvas id="reportDataChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-3">
+                                <label for="statusSelect" class="form-label">Select Status:</label>
+                                <select id="statusSelect" class="form-select" onchange="filterReports()">
+                                    <option value="">All</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="dismissed">Dismissed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="categorySelect" class="form-label">Select Category:</label>
+                                <select id="categorySelect" class="form-select" onchange="filterReports()">
+                                    <option value="">All</option>
+                                    <option value="spam">Spam</option>
+                                    <option value="harassment">Harassment</option>
+                                    <option value="inappropriate content">Inappropriate Content</option>
+                                    <option value="other">Other</option>
+                                    <!-- Add more category options as needed -->
+                                </select>
+                            </div>
+                        </div>
+                        <table id="reportsTable" class="table data-table mt-4">
+                            <thead>
+                                <tr>
+                                    <th>Reporter</th>
+                                    <th>Reported User</th>
+                                    <th>Content</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each reports}}
+                                <tr data-status="{{status}}" data-category="{{category}}">
+                                    <td>{{reporter.firstName}} {{reporter.lastName}}</td>
+                                    <td>{{reportedUser.firstName}} {{reportedUser.lastName}}</td>
+                                    <td>{{content}}</td>
+                                    <td>{{category}}</td>
+                                    <td>{{status}}</td>
+                                    <td>{{formattedDate}}</td>
+                                    <td>
+                                        <button class="btn btn-primary">Action</button>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-danger" onclick="dismissReport('{{_id}}')">Dismiss</button>
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/js/bootstrap.bundle.min.js"></script>
+<script src="/js/jquery-3.5.1.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.0.2/dist/chart.min.js"></script>
+<script src="/js/jquery.dataTables.min.js"></script>
+<script src="/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    const reportData = {{{reportData}}}; // Replace with the actual JSON data
+
+    const reportCategories = Object.keys(reportData);
+    const reportLabels = reportCategories.map(category => category.charAt(0).toUpperCase() + category.slice(1));
+    const reportChartData = reportCategories.map(category => reportData[category]);
+
+    const reportDataCanvas = document.getElementById("reportDataChart").getContext("2d");
+
+    new Chart(reportDataCanvas, {
+        type: "bar",
+        data: {
+            labels: reportLabels,
+            datasets: [
+                {
+                    label: "# of Reports",
+                    data: reportChartData,
+                    backgroundColor: [
+                        "rgba(255, 99, 132, 0.2)",
+                        "rgba(54, 162, 235, 0.2)",
+                        "rgba(255, 206, 86, 0.2)",
+                        "rgba(75, 192, 192, 0.2)",
+                        "rgba(153, 102, 255, 0.2)",
+                        "rgba(255, 159, 64, 0.2)"
+                    ],
+                    borderColor: [
+                        "rgba(255, 99, 132, 1)",
+                        "rgba(54, 162, 235, 1)",
+                        "rgba(255, 206, 86, 1)",
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(153, 102, 255, 1)",
+                        "rgba(255, 159, 64, 1)"
+                    ],
+                    borderWidth: 1,
+                },
+            ],
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                },
+            },
+        },
+    });
+
+    $(document).ready(function () {
+        $(".data-table").each(function (_, table) {
+            $(table).DataTable();
+        });
+    });
+</script>
+
+<script>
+    function filterReports() {
+        const statusSelect = document.getElementById('statusSelect');
+        const categorySelect = document.getElementById('categorySelect');
+        const selectedStatus = statusSelect.value;
+        const selectedCategory = categorySelect.value;
+
+        const rows = document.querySelectorAll('#reportsTable tbody tr');
+
+        rows.forEach((row) => {
+            const status = row.getAttribute('data-status');
+            const category = row.getAttribute('data-category');
+            const shouldShow = (selectedStatus === '' || selectedStatus === status) &&
+                (selectedCategory === '' || selectedCategory === category);
+            row.style.display = shouldShow ? 'table-row' : 'none';
+        });
+    }
+</script>
+
+<script>
+    // Function to handle the Dismiss button click event
+    function dismissReport(reportId) {
+        // Create a JSON payload with the status field set to "dismissed"
+        const payload = {
+            status: "dismissed"
+        };
+
+        // Send a PATCH request to update the report status
+        $.ajax({
+            url: `/admin/reports/${reportId}`,
+            type: "PATCH",
+            data: JSON.stringify(payload),
+            contentType: "application/json",
+            success: function (response) {
+                // Handle the success response, if needed
+                console.log("Report dismissed successfully.");
+
+                location.reload();
+            },
+            error: function (xhr, status, error) {
+                // Handle the error response, if needed
+                console.error("Error dismissing report:", error);
+            }
+        });
+    }
+</script>
+
+
+<style>
+    .chart-container {
+        position: relative;
+    }
+    #reportDataChart {
+        height: 50%;
+        width: 50%;
+    }
+</style>
+
+{{> footer}}

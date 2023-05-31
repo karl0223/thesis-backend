@@ -1,10 +1,20 @@
 import Report from "../../models/report.js";
+import { getReportsAnalytics } from "./analyticsControllers.js";
 
-// Get all reports (admin)
 const getAllReports = async (req, res) => {
   try {
-    const reports = await Report.find();
-    res.status(200).json(reports);
+    const reportData = await getReportsAnalytics();
+    const reports = await Report.find()
+      .populate("reporter", "firstName lastName")
+      .populate("reportedUser", "firstName lastName")
+      .lean();
+
+    // Format the date for each report
+    reports.forEach((report) => {
+      report.formattedDate = new Date(report.date).toLocaleString();
+    });
+
+    res.render("reports", { reports, reportData: JSON.stringify(reportData) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
