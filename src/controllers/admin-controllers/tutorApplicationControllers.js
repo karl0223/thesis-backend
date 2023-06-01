@@ -1,6 +1,11 @@
 import TutorApplication from "../../models/tutorApplication.js";
 import User from "../../models/user.js";
 import { getUserSocket } from "../../utils/socketUtils.js";
+import {
+  convertTextToRawData,
+  formatSubjectData,
+} from "../../utils/gradesData.js";
+import { ocrSpace } from "ocr-space-api-wrapper";
 
 const changeRole = async (req, res) => {
   try {
@@ -93,11 +98,38 @@ const createTutorApplication = async (req, res) => {
       return res.status(409).send("Application already submitted.");
     }
 
+    const imageData = await ocrSpace(image, {
+      apiKey: process.env.OCR_API_KEY,
+    });
+
+    console.log(imageData);
+
+    if (
+      !imageData ||
+      imageData.IsErroredOnProcessing ||
+      !imageData.ParsedResults ||
+      imageData.ParsedResults.length === 0 ||
+      !imageData.ParsedResults[0].ParsedText
+    ) {
+      return res
+        .status(500)
+        .send("Error processing image or no text detected.");
+    }
+
+    const parsedText = imageData.ParsedResults[0].ParsedText;
+    const rawData = convertTextToRawData(parsedText);
+    const subject = formatSubjectData(rawData);
+
+    console.log(parsedText);
+    console.log(rawData);
+    console.log(subject);
+
     const tutorApplication = new TutorApplication({
       userId: req.user._id,
       grades: image,
       briefIntro,
       teachingExperience,
+      subject, // Pass the subjects array directly
     });
 
     await tutorApplication.save();
@@ -110,7 +142,7 @@ const createTutorApplication = async (req, res) => {
 };
 
 const updateTutorApplication = async (req, res) => {
-  const { image, briefIntro, teachingExperience } = req.body;
+  const { image, briefIntro, teachingExperience, subject } = req.body;
 
   try {
     // Find the TutorApplication document to be updated
@@ -128,6 +160,7 @@ const updateTutorApplication = async (req, res) => {
     // Update the other fields
     tutorApplication.briefIntro = briefIntro;
     tutorApplication.teachingExperience = teachingExperience;
+    tutorApplication.subject = subject;
 
     await tutorApplication.save();
 
