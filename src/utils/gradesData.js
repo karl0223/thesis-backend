@@ -52,7 +52,8 @@ function filterSubjectData(data) {
       currentGrade <= 1.75 &&
       !currentSubjectCode.includes("GNED") &&
       !currentSubjectCode.includes("NSTP") &&
-      !currentSubjectCode.includes("CVSU")
+      !currentSubjectCode.includes("CVSU") &&
+      !currentSubjectCode.includes("FITT")
     ) {
       filteredSubjects.push({
         subjectCode: currentSubjectCode,

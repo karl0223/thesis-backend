@@ -99,6 +99,7 @@ const createTutorApplication = async (req, res) => {
       apiKey: process.env.OCR_API_KEY,
       scale: true,
       isTable: true,
+      OCREngine: 2,
     });
 
     if (
