@@ -2,8 +2,9 @@ import TutorApplication from "../../models/tutorApplication.js";
 import User from "../../models/user.js";
 import { getUserSocket } from "../../utils/socketUtils.js";
 import {
-  convertTextToRawData,
-  formatSubjectData,
+  separateData,
+  createSubjectArray,
+  filterSubjectData,
 } from "../../utils/gradesData.js";
 import { ocrSpace } from "ocr-space-api-wrapper";
 
@@ -100,6 +101,8 @@ const createTutorApplication = async (req, res) => {
 
     const imageData = await ocrSpace(image, {
       apiKey: process.env.OCR_API_KEY,
+      scale: true,
+      isTable: true,
     });
 
     console.log(imageData);
@@ -117,12 +120,20 @@ const createTutorApplication = async (req, res) => {
     }
 
     const parsedText = imageData.ParsedResults[0].ParsedText;
-    const rawData = convertTextToRawData(parsedText);
-    const subject = formatSubjectData(rawData);
+    const rawData = separateData(parsedText);
+    // const subjectData = createSubjectArray(rawData);
+    const subject = filterSubjectData(rawData);
 
     console.log(parsedText);
     console.log(rawData);
+    // console.log(subjectData);
     console.log(subject);
+
+    if (subject.length === 0) {
+      return res
+        .status(500)
+        .send("Error processing image or no text detected.");
+    }
 
     const tutorApplication = new TutorApplication({
       userId: req.user._id,
