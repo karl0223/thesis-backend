@@ -39,21 +39,6 @@ function separateData(parsedText) {
   };
 }
 
-function createSubjectArray(data) {
-  const { subjectCode, description, grades } = data;
-  const subjects = [];
-
-  for (let i = 0; i < subjectCode.length; i++) {
-    subjects.push({
-      subjectCode: subjectCode[i],
-      description: description[i],
-      grade: grades[i],
-    });
-  }
-
-  return subjects;
-}
-
 function filterSubjectData(data) {
   const { subjectCode, description, grades } = data;
   const filteredSubjects = [];
@@ -80,4 +65,19 @@ function filterSubjectData(data) {
   return filteredSubjects;
 }
 
-export { separateData, createSubjectArray, filterSubjectData };
+// function createSubjectArray(data) {
+//   const { subjectCode, description, grades } = data;
+//   const subjects = [];
+
+//   for (let i = 0; i < subjectCode.length; i++) {
+//     subjects.push({
+//       subjectCode: subjectCode[i],
+//       description: description[i],
+//       grade: grades[i],
+//     });
+//   }
+
+//   return subjects;
+// }
+
+export { separateData, filterSubjectData };

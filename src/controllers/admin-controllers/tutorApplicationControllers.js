@@ -1,11 +1,7 @@
 import TutorApplication from "../../models/tutorApplication.js";
 import User from "../../models/user.js";
 import { getUserSocket } from "../../utils/socketUtils.js";
-import {
-  separateData,
-  createSubjectArray,
-  filterSubjectData,
-} from "../../utils/gradesData.js";
+import { separateData, filterSubjectData } from "../../utils/gradesData.js";
 import { ocrSpace } from "ocr-space-api-wrapper";
 
 const changeRole = async (req, res) => {
@@ -105,8 +101,6 @@ const createTutorApplication = async (req, res) => {
       isTable: true,
     });
 
-    console.log(imageData);
-
     if (
       !imageData ||
       imageData.IsErroredOnProcessing ||
@@ -121,12 +115,10 @@ const createTutorApplication = async (req, res) => {
 
     const parsedText = imageData.ParsedResults[0].ParsedText;
     const rawData = separateData(parsedText);
-    // const subjectData = createSubjectArray(rawData);
     const subject = filterSubjectData(rawData);
 
     console.log(parsedText);
     console.log(rawData);
-    // console.log(subjectData);
     console.log(subject);
 
     if (subject.length === 0) {
@@ -239,6 +231,13 @@ const approveTutorApplication = async (req, res) => {
       { role: "tutor" },
       { new: true }
     );
+
+    // Add each subject code and description from the tutor application to user's subjects
+    for (const subject of tutorApplication.subject) {
+      const { subjectCode, description } = subject;
+
+      updateRole.subjects.push({ subjectCode, description });
+    }
 
     await tutorApplication.save();
     await updateRole.save();
