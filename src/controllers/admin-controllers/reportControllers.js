@@ -1,5 +1,7 @@
 import Report from "../../models/report.js";
+import User from "../../models/user.js";
 import { getReportsAnalytics } from "./analyticsControllers.js";
+import { getUserSocket } from "../../utils/socketUtils.js";
 
 const getAllReports = async (req, res) => {
   try {
@@ -25,6 +27,7 @@ const getAllReports = async (req, res) => {
 const reportUser = async (req, res) => {
   try {
     const { reportedUser, content, category } = req.body;
+    const io = req.app.get("socketio");
     const report = new Report({
       reporter: req.user._id,
       reportedUser,
@@ -32,6 +35,10 @@ const reportUser = async (req, res) => {
       category,
     });
     await report.save();
+
+    const reportedUserSocket = getUserSocket(reportedUser);
+    io.to(reportedUserSocket).emit("new-report", report);
+
     res.status(201).json(report);
   } catch (err) {
     console.error(err);
@@ -39,23 +46,40 @@ const reportUser = async (req, res) => {
   }
 };
 
-// Update status report (admin)
 const updateReport = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const report = await Report.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
-    if (!report) {
-      return res.status(404).json({ message: "Report not found" });
+    const io = req.app.get("socketio");
+
+    let report;
+    if (status === "dismissed" || status === "resolved") {
+      report = await Report.findByIdAndUpdate(id, { status }, { new: true });
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+    } else {
+      return res.status(400).json({ message: "Invalid status" });
     }
-    res.status(200).json(report);
+
+    if (status === "resolved") {
+      await User.findByIdAndUpdate(
+        report.reportedUser._id,
+        { isBanned: true },
+        { new: true }
+      );
+    }
+
+    const reporterSocket = getUserSocket(report.reporter._id);
+    const reportedUserSocket = getUserSocket(report.reportedUser._id);
+
+    io.to(reporterSocket).emit("report-result", report);
+    io.to(reportedUserSocket).emit("report-result", report);
+
+    return res.status(200).json(report);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

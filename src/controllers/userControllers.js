@@ -36,6 +36,16 @@ const login = async (req, res) => {
       (device) => device.deviceToken === deviceToken
     );
 
+    if (!user.isEmailVerified) {
+      return res.send({ message: "Please verify your email address" });
+    }
+
+    if (user.isBanned) {
+      return res
+        .status(403)
+        .send({ message: "You are banned from the system" });
+    }
+
     if (deviceIndex === -1) {
       // the device is new, so add it to the user's devices array
       user.devices.push(updatedDevice);
@@ -45,10 +55,6 @@ const login = async (req, res) => {
     }
 
     await user.save();
-
-    if (!user.isEmailVerified) {
-      return res.send({ message: "Please verify your email address" });
-    }
 
     const token = await user.generateAuthToken();
 
