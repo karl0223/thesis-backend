@@ -39,7 +39,16 @@ const addSubject = async (req, res) => {
     for (const subject of subjects) {
       const { subjectCode, description } = subject;
 
-      user.subjects.push({ subjectCode, description });
+      // Check if the subject already exists in user's subjects
+      const isSubjectExist = user.subjects.some(
+        (subject) =>
+          subject.subjectCode === subjectCode &&
+          subject.description === description
+      );
+
+      if (!isSubjectExist) {
+        user.subjects.push({ subjectCode, description });
+      }
     }
 
     await user.save();
