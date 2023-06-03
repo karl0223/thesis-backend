@@ -1,6 +1,6 @@
 import User from "../models/user.js";
 import { separateData, filterSubjectData } from "../utils/gradesData.js";
-import { ocrSpace } from "../utils/ocrSpace.js";
+import { ocrSpace } from "ocr-space-api-wrapper";
 
 const addSubject = async (req, res) => {
   try {
