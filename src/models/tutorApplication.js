@@ -17,6 +17,22 @@ const tutorApplicationSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  subject: [
+    {
+      subjectCode: {
+        type: String,
+        required: true,
+      },
+      description: {
+        type: String,
+        required: true,
+      },
+      grade: {
+        type: String,
+        required: true,
+      },
+    },
+  ],
   status: {
     type: String,
     enum: ["pending", "approved", "rejected"],
