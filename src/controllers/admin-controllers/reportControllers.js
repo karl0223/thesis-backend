@@ -1,6 +1,7 @@
 import Report from "../../models/report.js";
 import User from "../../models/user.js";
 import ChatRoom from "../../models/chatRoom.js";
+import HelpRequest from "../../models/askHelp.js";
 import { getReportsAnalytics } from "./analyticsControllers.js";
 import { getUserSocket } from "../../utils/socketUtils.js";
 
@@ -80,6 +81,9 @@ const updateReport = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
+    const reporterSocket = await getUserSocket(report.reporter._id);
+    const reportedUserSocket = await getUserSocket(report.reportedUser._id);
+
     if (status === "resolved") {
       await User.findByIdAndUpdate(
         report.reportedUser._id,
@@ -99,56 +103,66 @@ const updateReport = async (req, res) => {
         ],
       });
 
-      if (!chatRooms || chatRooms.length === 0) {
-        return res.status(404).send("Chat rooms not found");
+      const requests = await HelpRequest.find({
+        studentId: userId,
+        reqStatus: "pending",
+      });
+
+      if (requests || requests.length !== 0) {
+        for (const request of requests) {
+          let tutorSocket = await getUserSocket(request.tutorId);
+          io.to(tutorSocket).emit("request-remove", request);
+          await HelpRequest.deleteOne({ _id: request._id });
+        }
       }
 
-      for (const chatRoom of chatRooms) {
-        if (chatRoom.owner.toString() === userId.toString()) {
-          // Soft delete the chat room if the user is the owner
-          chatRoom.deletedAt = new Date();
-          await chatRoom.save();
+      if (chatRooms || chatRooms.length !== 0) {
+        for (const chatRoom of chatRooms) {
+          if (chatRoom.owner.toString() === userId.toString()) {
+            // Soft delete the chat room if the user is the owner
+            chatRoom.deletedAt = new Date();
+            await chatRoom.save();
 
-          const participantsToKick = chatRoom.participants;
-          // Kick each participant
-          for (const participant of participantsToKick) {
-            let user = await User.findById(participant.userId);
-            user.hasRoom = false;
-            await user.save();
+            const participantsToKick = chatRoom.participants;
+            // Kick each participant
+            for (const participant of participantsToKick) {
+              let user = await User.findById(participant.userId);
+              user.hasRoom = false;
+              await user.save();
+              await ChatRoom.updateOne(
+                { _id: chatRoom._id },
+                { $pull: { participants: { userId: participant.userId._id } } }
+              );
+            }
+
+            io.to(chatRoom._id.toString()).emit("room-deleted", {
+              roomId: chatRoom._id,
+            });
+          } else {
+            // Remove the participant from the chat room if the user is not the owner
             await ChatRoom.updateOne(
               { _id: chatRoom._id },
-              { $pull: { participants: { userId: participant.userId._id } } }
+              { $pull: { participants: { userId: userId } } }
             );
+
+            // Update the user's hasRoom field
+            let user = await User.findById(userId);
+            user.hasRoom = false;
+            await user.save();
+
+            io.to(chatRoom._id.toString()).emit("user-left", {
+              roomId: chatRoom._id,
+              user: {
+                userId,
+                firstName: req.user.firstName,
+                lastName: req.user.lastName,
+              },
+              sessionEnded: chatRoom.sessionEnded,
+            });
           }
-
-          io.to(chatRoom._id.toString()).emit("room-deleted", { roomId });
-        } else {
-          // Remove the participant from the chat room if the user is not the owner
-          await ChatRoom.updateOne(
-            { _id: chatRoom._id },
-            { $pull: { participants: { userId: userId } } }
-          );
-
-          // Update the user's hasRoom field
-          let user = await User.findById(userId);
-          user.hasRoom = false;
-          await user.save();
-
-          io.to(chatRoom._id.toString()).emit("user-left", {
-            roomId: chatRoom._id,
-            user: {
-              userId,
-              firstName: req.user.firstName,
-              lastName: req.user.lastName,
-            },
-            sessionEnded: chatRoom.sessionEnded,
-          });
         }
       }
     }
-
-    const reporterSocket = await getUserSocket(report.reporter._id);
-    const reportedUserSocket = await getUserSocket(report.reportedUser._id);
 
     io.to(reporterSocket).emit("report-result", report);
     io.to(reportedUserSocket).emit("report-result", report);
