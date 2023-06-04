@@ -36,7 +36,7 @@ const reportUser = async (req, res) => {
     });
     await report.save();
 
-    const reportedUserSocket = getUserSocket(reportedUser);
+    const reportedUserSocket = await getUserSocket(reportedUser);
     io.to(reportedUserSocket).emit("new-report", report);
 
     res.status(201).json(report);
@@ -65,13 +65,13 @@ const updateReport = async (req, res) => {
     if (status === "resolved") {
       await User.findByIdAndUpdate(
         report.reportedUser._id,
-        { isBanned: true },
+        { isBanned: true, tokens: [] },
         { new: true }
       );
     }
 
-    const reporterSocket = getUserSocket(report.reporter._id);
-    const reportedUserSocket = getUserSocket(report.reportedUser._id);
+    const reporterSocket = await getUserSocket(report.reporter._id);
+    const reportedUserSocket = await getUserSocket(report.reportedUser._id);
 
     io.to(reporterSocket).emit("report-result", report);
     io.to(reportedUserSocket).emit("report-result", report);
