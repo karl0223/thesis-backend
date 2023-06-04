@@ -12,6 +12,7 @@ const getAllTutors = async (req, res) => {
     role: "tutor",
     "subjects.0.subjectCode": { $exists: true },
     isAvailable: true,
+    isBanned: false,
   };
 
   if (search) {

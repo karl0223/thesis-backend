@@ -65,6 +65,9 @@
                                     <td>
                                         <button class="btn btn-danger" onclick="updateReportStatus('{{_id}}', 'dismissed')">Dismiss</button>
                                     </td>
+                                    <td>
+                                        <button class="btn btn-warning" onclick="updateReportStatus('{{_id}}', 'revoke')">Revoke</button>
+                                    </td>
                                 </tr>
                                 {{/each}}
                             </tbody>
