@@ -30,9 +30,7 @@ const addSubject = async (req, res) => {
     const subjects = filterSubjectData(rawData);
 
     if (subjects.length === 0) {
-      return res
-        .status(500)
-        .send("Error processing image or no text detected.");
+      return res.status(500).send("Please Upload a better quality picture.");
     }
 
     const user = await User.findById(req.user._id);
