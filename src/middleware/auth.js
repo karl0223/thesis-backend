@@ -3,7 +3,9 @@ import User from "../models/user.js";
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.cookies.access_token || req.header("Authorization").replace("Bearer ", "");
+    const token =
+      req.cookies.access_token ||
+      req.header("Authorization").replace("Bearer ", "");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({
       _id: decoded._id,
@@ -12,6 +14,10 @@ const auth = async (req, res, next) => {
 
     if (!user) {
       throw new Error();
+    }
+
+    if (user.isBanned) {
+      return res.status(403).send({ error: "You are banned." });
     }
 
     // check if the device token and FCM token headers are present in the request

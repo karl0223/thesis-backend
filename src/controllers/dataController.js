@@ -12,6 +12,7 @@ const getAllTutors = async (req, res) => {
     role: "tutor",
     "subjects.0.subjectCode": { $exists: true },
     isAvailable: true,
+    isBanned: false,
   };
 
   if (search) {
@@ -31,10 +32,6 @@ const getAllTutors = async (req, res) => {
       { "subjects.subtopics.name": { $in: searchRegexes } },
       { "subjects.subtopics.description": { $in: searchRegexes } },
     ];
-
-    console.log(searchRegexes);
-    console.log("Sanitized Search: ", sanitizedSearch);
-    console.log("Search Terms: ", searchTerms);
   }
 
   const totalTutors = await User.countDocuments(query);

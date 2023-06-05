@@ -60,10 +60,13 @@
                                     <td>{{status}}</td>
                                     <td>{{formattedDate}}</td>
                                     <td>
-                                        <button class="btn btn-primary">Action</button>
+                                        <button class="btn btn-primary" onclick="updateReportStatus('{{_id}}', 'resolved')">Approve</button>
                                     </td>
                                     <td>
-                                        <button class="btn btn-danger" onclick="dismissReport('{{_id}}')">Dismiss</button>
+                                        <button class="btn btn-danger" onclick="updateReportStatus('{{_id}}', 'dismissed')">Dismiss</button>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-warning" onclick="updateReportStatus('{{_id}}', 'revoke')">Revoke</button>
                                     </td>
                                 </tr>
                                 {{/each}}
@@ -155,11 +158,10 @@
 </script>
 
 <script>
-    // Function to handle the Dismiss button click event
-    function dismissReport(reportId) {
-        // Create a JSON payload with the status field set to "dismissed"
+    function updateReportStatus(reportId, status) {
+        // Create a JSON payload with the desired status
         const payload = {
-            status: "dismissed"
+            status: status
         };
 
         // Send a PATCH request to update the report status
@@ -170,13 +172,13 @@
             contentType: "application/json",
             success: function (response) {
                 // Handle the success response, if needed
-                console.log("Report dismissed successfully.");
+                console.log("Report status updated successfully.");
 
                 location.reload();
             },
             error: function (xhr, status, error) {
                 // Handle the error response, if needed
-                console.error("Error dismissing report:", error);
+                console.error("Error updating report status:", error);
             }
         });
     }

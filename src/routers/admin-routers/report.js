@@ -15,11 +15,11 @@ reportRouter.get("/admin/reports", webAuth, webAdminAuth, getAllReports);
 // update report status (admin)
 reportRouter.patch("/admin/reports/:id", webAuth, webAdminAuth, updateReport);
 
-// Get all reports (admin)
-reportRouter.get("/api/reports", auth, getAllReports);
+// // Get all reports (admin)
+// reportRouter.get("/api/reports", auth, getAllReports);
 
-// update report status (admin)
-reportRouter.patch("/api/reports/:id", auth, updateReport);
+// // update report status (admin)
+// reportRouter.patch("/api/reports/:id", auth, updateReport);
 
 // report user
 reportRouter.post("/api/report", auth, reportUser);
