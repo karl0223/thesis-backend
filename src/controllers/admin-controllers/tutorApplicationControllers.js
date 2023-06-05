@@ -118,10 +118,6 @@ const createTutorApplication = async (req, res) => {
     const rawData = separateData(parsedText);
     const subject = filterSubjectData(rawData);
 
-    console.log(parsedText);
-    console.log(rawData);
-    console.log(subject);
-
     if (subject.length === 0) {
       return res
         .status(500)
