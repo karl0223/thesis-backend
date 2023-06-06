@@ -5,28 +5,32 @@ import serviceAccount from "../../lft_secret_token.json" assert { type: "json" }
 var certPath = admin.credential.cert(serviceAccount);
 var FCM = new fcm(certPath);
 
-function sendPushNotification(firebaseToken, title, messageBody) {
+function sendPushNotification(devices, title, messageBody) {
   try {
-    let message = {
-      android: {
-        ttl: 3600 * 1000, // 1 hour in milliseconds
-        priority: "high",
-        notification: {
-          title: title,
-          body: messageBody,
-        },
-      },
-      token: firebaseToken,
-    };
+    devices.forEach((device) => {
+      console.log(device);
 
-    FCM.send(message, function (err, response) {
-      if (err) {
-        console.log("Something has gone wrong!");
-        //res.send(err);
-      } else {
-        //console.log("Successfully sent with response: ", response);
-        //res.send(response);
-      }
+      let message = {
+        android: {
+          ttl: 3600 * 1000, // 1 hour in milliseconds
+          priority: "high",
+          notification: {
+            title: title,
+            body: messageBody,
+          },
+        },
+        token: device.fcmToken,
+      };
+
+      FCM.send(message, function (err, response) {
+        if (err) {
+          console.log("Something has gone wrong!");
+          //res.send(err);
+        } else {
+          console.log("Successfully sent with response: ", response);
+          //res.send(response);
+        }
+      });
     });
   } catch (e) {
     console.log(e);

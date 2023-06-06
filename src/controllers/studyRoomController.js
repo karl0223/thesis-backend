@@ -6,6 +6,8 @@ import { getUserSocket } from "../utils/socketUtils.js";
 import { inviteUser, acceptInvitation } from "../utils/chatRoomUtils.js";
 import { normalizeText, termCounts } from "../utils/searchUtils.js";
 
+import sendPushNotification from "../utils/firebase-notification.js";
+
 // Create a new chat room and add the owner as a participant
 const createChatRoom = async (req, res) => {
   try {
@@ -153,6 +155,12 @@ const leaveChatRoom = async (req, res) => {
         await ChatRoom.updateOne(
           { _id: roomId },
           { $pull: { participants: { userId: participant.userId._id } } }
+        );
+
+        sendPushNotification(
+          user.devices,
+          "Tutor Left the Chat Room",
+          "The tutor has left the chat room."
         );
       }
 
@@ -575,6 +583,12 @@ const acceptUserRequest = async (req, res) => {
         io.to(roomId).emit("participant-joined", { userId });
       }
 
+      sendPushNotification(
+        user.devices,
+        "Join Room Accepted!",
+        "You have been accepted to join the chat room"
+      );
+
       res.status(200).send("User accepted successfully.");
     } else {
       // Remove the participant from the pending list
@@ -591,6 +605,12 @@ const acceptUserRequest = async (req, res) => {
           userId: userId,
         },
       });
+
+      sendPushNotification(
+        user.devices,
+        "Join Room Rejected!",
+        "You have been rejected to join the chat room"
+      );
 
       res.status(200).send("User rejected successfully.");
     }
