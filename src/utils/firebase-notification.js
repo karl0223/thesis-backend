@@ -1,6 +1,8 @@
 import admin from "firebase-admin";
 import fcm from "fcm-notification";
-import serviceAccount from "../../lft_secret_token.json" assert { type: "json" };
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const serviceAccount = require("../../lft_secret_token.json");
 
 var certPath = admin.credential.cert(serviceAccount);
 var FCM = new fcm(certPath);
