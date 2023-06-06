@@ -109,6 +109,15 @@ const joinRoom = async (req, res) => {
           });
         }
       }
+
+      const tutor = await User.findById(owner._id);
+
+      sendPushNotification(
+        tutor.devices,
+        "New Participant Request",
+        "A new participant has requested to join your study room."
+      );
+
       res.status(202).send();
     }
   } catch (err) {

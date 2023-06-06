@@ -10,8 +10,6 @@ var FCM = new fcm(certPath);
 function sendPushNotification(devices, title, messageBody) {
   try {
     devices.forEach((device) => {
-      console.log(device);
-
       let message = {
         android: {
           ttl: 3600 * 1000, // 1 hour in milliseconds

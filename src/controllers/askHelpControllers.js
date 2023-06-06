@@ -97,6 +97,14 @@ const createRequest = async (req, res) => {
         },
       });
 
+    const tutor = await User.findById(tutorId);
+
+    sendPushNotification(
+      tutor.devices,
+      "New Help Request",
+      "You have a new help request!"
+    );
+
     io.to(tutorSocket).emit("new-request", requestInfo);
     res.send(requestInfo);
   } catch (err) {
