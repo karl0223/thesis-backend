@@ -257,6 +257,8 @@ const acceptRequest = async (req, res) => {
     } else {
       io.to(tuteeSocket).emit("request-rejected", helpRequest);
 
+      const tutee = await User.findById(helpRequest.studentId._id);
+
       sendPushNotification(
         tutee.devices,
         "Help Request Rejected!",
