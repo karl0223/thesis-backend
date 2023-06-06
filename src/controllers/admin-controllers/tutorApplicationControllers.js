@@ -3,6 +3,7 @@ import User from "../../models/user.js";
 import { getUserSocket } from "../../utils/socketUtils.js";
 import { separateData, filterSubjectData } from "../../utils/gradesData.js";
 import { ocrSpace } from "ocr-space-api-wrapper";
+import sendPushNotification from "../../utils/firebase-notification.js";
 
 const changeRole = async (req, res) => {
   try {
@@ -190,6 +191,15 @@ const rejectTutorApplication = async (req, res) => {
     }
 
     tutorApplication.remove();
+
+    const user = await User.findById(tutorApplication.userId);
+
+    sendPushNotification(
+      user.devices,
+      "Tutor Application Rejected",
+      "Your tutor application has been rejected."
+    );
+
     res.redirect("/admin/tutor-application");
   } catch (err) {
     console.log(err.message);
@@ -243,6 +253,14 @@ const approveTutorApplication = async (req, res) => {
     if (userSocket) {
       io.emit("tutor-application-approved", tutorApplication);
     }
+
+    const user = await User.findById(tutorApplication.userId);
+
+    sendPushNotification(
+      user.devices,
+      "Your Application has been approved",
+      "Congratulations! You are now a tutor."
+    );
 
     res.redirect("/admin/tutor-application");
   } catch (error) {

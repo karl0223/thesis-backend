@@ -2,6 +2,7 @@ import HelpRequest from "../models/askHelp.js";
 import User from "../models/user.js";
 import ChatRoom from "../models/chatRoom.js";
 import { getUserSocket } from "../utils/socketUtils.js";
+import sendPushNotification from "../utils/firebase-notification.js";
 
 const createRequest = async (req, res) => {
   const io = req.app.get("socketio");
@@ -245,9 +246,23 @@ const acceptRequest = async (req, res) => {
         chatroom: updatedChatRoom,
         request: helpRequest,
       });
+
+      sendPushNotification(
+        tutee.devices,
+        "Help Request Accepted!",
+        "The tutor has accepted your help request."
+      );
+
       res.send({ chatroom: updatedChatRoom, request: helpRequest });
     } else {
       io.to(tuteeSocket).emit("request-rejected", helpRequest);
+
+      sendPushNotification(
+        tutee.devices,
+        "Help Request Rejected!",
+        "The tutor has rejected your help request."
+      );
+
       res.send(helpRequest);
     }
   } catch (err) {
