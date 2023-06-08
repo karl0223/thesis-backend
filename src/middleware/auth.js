@@ -49,7 +49,11 @@ const auth = async (req, res, next) => {
       // Handle Google login
       token = token.replace("Google ", "");
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findOne({ googleId: decoded.googleId });
+      const user = await User.findOne({
+        _id: decoded._id,
+        googleId: decoded.googleId,
+        "tokens.token": token,
+      });
 
       if (!user) {
         throw new Error();
