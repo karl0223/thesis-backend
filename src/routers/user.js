@@ -4,6 +4,7 @@ import { auth } from "../middleware/auth.js";
 import {
   signup,
   login,
+  signInWithGoogle,
   forgotPassword,
   renderResetPasswordPage,
   resetPassword,
@@ -33,6 +34,9 @@ userRouter.post("/api/reset-password", resetPassword);
 
 // user login
 userRouter.post("/api/users/login", login);
+
+// Google login
+userRouter.post("/google-login", signInWithGoogle);
 
 // logout user
 userRouter.post("/api/users/logout", auth, logout);

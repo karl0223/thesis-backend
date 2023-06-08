@@ -29,13 +29,22 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
       trim: true,
       minlength: 7,
-      validate(value) {
-        if (value.toLowerCase().includes("password")) {
-          throw new Error("Password cannot contain 'password'");
-        }
+      validate: {
+        validator: function (value) {
+          // Check if the value contains 'password'
+          if (value.toLowerCase().includes("password")) {
+            throw new Error("Password cannot contain 'password'");
+          }
+
+          // If the user is not using Google login, enforce the required constraint
+          if (!this.googleId && !value) {
+            throw new Error("Password is required");
+          }
+
+          return true;
+        },
       },
     },
     tokens: [
