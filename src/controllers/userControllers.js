@@ -137,6 +137,7 @@ const signInWithGoogle = async (req, res) => {
           lastName: lastName,
           email,
           googleId: sub,
+          isEmailVerified: true,
         });
 
         await user.save();
@@ -334,6 +335,10 @@ const updateUser = async (req, res) => {
 
   if (!isValidOperation) {
     return res.status(400).send({ error: "Invalid updates!" });
+  }
+
+  if (req.user.googleId && req.body.password) {
+    return res.status(401).send("Cannot change password for Google users");
   }
 
   try {
