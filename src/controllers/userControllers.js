@@ -4,6 +4,11 @@ import {
   sendResetPasswordEmail,
 } from "../utils/verifyEmail.js";
 
+import { OAuth2Client } from "google-auth-library";
+import { google } from "googleapis";
+
+const client = new OAuth2Client(process.env.CLIENT_ID);
+
 const signup = async (req, res) => {
   const { email } = req.body;
   const emailRegex = /^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$/;
@@ -83,6 +88,115 @@ const login = async (req, res) => {
   }
 };
 
+const signInWithGoogle = async (req, res) => {
+  const { id_token, access_token, deviceToken, fcmToken } = req.body;
+
+  try {
+    // Set the access token on the OAuth2 client
+    client.setCredentials({ access_token });
+
+    // Retrieve user profile details using the Google People API
+    const people = google.people({ version: "v1", auth: client });
+
+    // Fetch user's profile information
+    const profile = await people.people.get({
+      resourceName: "people/me",
+      personFields: "names",
+    });
+
+    const firstName = profile.data.names[0]?.givenName || "";
+    const lastName = profile.data.names[0]?.familyName || "";
+
+    const ticket = await client.verifyIdToken({
+      idToken: id_token,
+      audience: process.env.CLIENT_ID,
+    });
+
+    const { email, sub } = ticket.getPayload();
+
+    const emailRegex = /^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$/;
+
+    if (emailRegex.test(email)) {
+      const existingUser = await User.findOne({ email });
+
+      if (existingUser && !existingUser.googleId) {
+        return res.status(409).json({
+          error: "Email already registered through traditional login",
+        });
+      }
+
+      // Check if user with the same Google ID exists
+      let user = await User.findOne({
+        googleId: sub,
+      });
+
+      if (!user) {
+        // Create a new user if not found
+        user = new User({
+          firstName: firstName,
+          lastName: lastName,
+          email,
+          googleId: sub,
+          isEmailVerified: true,
+        });
+
+        await user.save();
+      }
+
+      if (user.isBanned) {
+        return res
+          .status(403)
+          .send({ message: "You are banned from the system" });
+      }
+
+      const updatedDevice = { deviceToken, fcmToken };
+
+      const deviceIndex = user.devices.findIndex(
+        (device) => device.deviceToken === deviceToken
+      );
+
+      if (deviceIndex === -1) {
+        // the device is new, so add it to the user's devices array
+        user.devices.push(updatedDevice);
+      } else {
+        // update the existing device's fcmToken
+        user.devices[deviceIndex].fcmToken = fcmToken;
+      }
+
+      await user.save();
+
+      // Generate JWT token for authentication
+      const token = await user.generateGoogleAuthToken();
+
+      const userInfo = await User.findById(user._id)
+        .populate({
+          path: "ratingsAsTutor",
+          select: "subject value feedback tuteeId",
+          populate: {
+            path: "subject.subtopics.subtopicsRatings.tuteeId",
+            select: "firstName lastName avatar",
+          },
+        })
+        .populate({
+          path: "ratingsAsTutee",
+          select: "value feedback tutorId",
+          populate: {
+            path: "tutorId",
+            select: "firstName lastName avatar",
+          },
+        })
+        .exec();
+
+      return res.status(200).json({ user: userInfo, token });
+    } else {
+      return res.status(400).send("Invalid email address");
+    }
+  } catch (error) {
+    console.error("Error verifying Google token:", error);
+    res.status(401).json({ error: "Failed to verify Google token" });
+  }
+};
+
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -91,6 +205,12 @@ const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.googleId) {
+      return res
+        .status(400)
+        .json({ message: "Cannot reset password for Google users" });
     }
 
     // Generate the reset password token
@@ -217,6 +337,10 @@ const updateUser = async (req, res) => {
     return res.status(400).send({ error: "Invalid updates!" });
   }
 
+  if (req.user.googleId && req.body.password) {
+    return res.status(401).send("Cannot change password for Google users");
+  }
+
   try {
     updates.forEach((update) => {
       req.user[update] = req.body[update];
@@ -256,6 +380,7 @@ const deleteUser = async (req, res) => {
 export {
   signup,
   login,
+  signInWithGoogle,
   forgotPassword,
   renderResetPasswordPage,
   resetPassword,
