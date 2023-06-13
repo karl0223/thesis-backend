@@ -3,72 +3,46 @@ import User from "../models/user.js";
 
 const auth = async (req, res, next) => {
   try {
-    let token = req.cookies.access_token || req.header("Authorization");
+    const token =
+      req.cookies.access_token ||
+      req.header("Authorization").replace("Bearer ", "");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findOne({
+      _id: decoded._id,
+      "tokens.token": token,
+    });
 
-    // Check if it's a traditional login or Google login
-    if (token && token.startsWith("Bearer ")) {
-      token = token.replace("Bearer ", "");
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findOne({
-        _id: decoded._id,
-        "tokens.token": token,
-      });
-
-      if (!user) {
-        throw new Error();
-      }
-
-      if (user.isBanned) {
-        return res.status(403).send({ error: "You are banned." });
-      }
-
-      // Check if the device token and FCM token headers are present in the request
-      const deviceToken = req.header("deviceToken");
-      const fcmToken = req.header("fcmToken");
-
-      if (deviceToken && fcmToken) {
-        const deviceIndex = user.devices.findIndex(
-          (device) => device.deviceToken === deviceToken
-        );
-        if (deviceIndex === -1) {
-          // Add a new device object to the devices array
-          user.devices.push({ deviceToken, fcmToken });
-          await user.save();
-        } else {
-          // Update the FCM token for the existing device object
-          user.devices[deviceIndex].fcmToken = fcmToken;
-          await user.save();
-        }
-      }
-
-      req.deviceToken = deviceToken;
-      req.fcmToken = fcmToken;
-      req.user = user;
-      req.token = token;
-    } else if (token && token.startsWith("Google ")) {
-      // Handle Google login
-      token = token.replace("Google ", "");
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findOne({
-        _id: decoded._id,
-        googleId: decoded.googleId,
-        "tokens.token": token,
-      });
-
-      if (!user) {
-        throw new Error();
-      }
-
-      if (user.isBanned) {
-        return res.status(403).send({ error: "You are banned." });
-      }
-
-      req.user = user;
-      req.token = token;
-    } else {
+    if (!user) {
       throw new Error();
     }
 
+    if (user.isBanned) {
+      return res.status(403).send({ error: "You are banned." });
+    }
+
+    // check if the device token and FCM token headers are present in the request
+    const deviceToken = req.header("deviceToken");
+    const fcmToken = req.header("fcmToken");
+
+    if (deviceToken && fcmToken) {
+      const deviceIndex = user.devices.findIndex(
+        (device) => device.deviceToken === deviceToken
+      );
+      if (deviceIndex === -1) {
+        // add a new device object to the devices array
+        user.devices.push({ deviceToken, fcmToken });
+        await user.save();
+      } else {
+        // update the FCM token for the existing device object
+        user.devices[deviceIndex].fcmToken = fcmToken;
+        await user.save();
+      }
+    }
+
+    req.deviceToken = deviceToken;
+    req.fcmToken = fcmToken;
+    req.user = user;
+    req.token = token;
     next();
   } catch (error) {
     res.status(401).send({ error: "Please authenticate." });
@@ -85,42 +59,18 @@ const isAdmin = (req, res, next) => {
 const socketAuth = async (socket, next) => {
   try {
     const token = socket.handshake.query.authToken;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findOne({
+      _id: decoded._id,
+      "tokens.token": token,
+    });
 
-    // Check if it's a traditional login or Google login
-    if (token.startsWith("Bearer ")) {
-      // Traditional login
-      const decoded = jwt.verify(
-        token.replace("Bearer ", ""),
-        process.env.JWT_SECRET
-      );
-      const user = await User.findOne({
-        _id: decoded._id,
-        "tokens.token": token,
-      });
-
-      if (!user) {
-        throw new Error();
-      }
-
-      socket.request.user = user;
-      socket.request.token = token;
-    } else if (token.startsWith("Google ")) {
-      // Google login
-      const decoded = jwt.verify(
-        token.replace("Google ", ""),
-        process.env.JWT_SECRET
-      );
-      const user = await User.findOne({ googleId: decoded.googleId });
-
-      if (!user) {
-        throw new Error();
-      }
-
-      socket.request.user = user;
-      socket.request.token = token;
-    } else {
+    if (!user) {
       throw new Error();
     }
+
+    socket.request.user = user;
+    socket.request.token = token;
 
     console.log(`Socket ${socket.id} authenticated`);
     next();
