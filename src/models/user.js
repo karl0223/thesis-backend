@@ -255,11 +255,12 @@ userSchema.methods.generateAuthToken = async function () {
   return token;
 };
 
-userSchema.methods.generateGoogleAuthToken = async function () {
+userSchema.methods.generateGoogleAuthToken = async function (expirationTime) {
   const user = this;
   const token = jwt.sign(
     { _id: user._id.toString(), googleId: user.googleId },
-    process.env.JWT_SECRET
+    process.env.JWT_SECRET,
+    { expiresIn: expirationTime }
   );
 
   user.tokens = user.tokens.concat({ token });

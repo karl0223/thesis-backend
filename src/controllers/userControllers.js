@@ -101,96 +101,107 @@ const signInWithGoogle = async (req, res) => {
     // Fetch user's profile information
     const profile = await people.people.get({
       resourceName: "people/me",
-      personFields: "names",
+      personFields: "names,emailAddresses",
     });
 
-    const firstName = profile.data.names[0]?.givenName || "";
-    const lastName = profile.data.names[0]?.familyName || "";
+    const firstName = profile.data.names?.[0]?.givenName || "";
+    const lastName = profile.data.names?.[0]?.familyName || "";
+    const email = profile.data.emailAddresses?.[0]?.value || "";
 
+    const emailRegex = /^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).send("Invalid email address");
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser && !existingUser.googleId) {
+      return res.status(409).json({
+        error: "Email already registered through traditional login",
+      });
+    }
+
+    // Verify the Google ID token
     const ticket = await client.verifyIdToken({
       idToken: id_token,
       audience: process.env.CLIENT_ID,
     });
 
-    const { email, sub } = ticket.getPayload();
+    const googleId = ticket.getPayload()?.sub;
 
-    const emailRegex = /^[A-Za-z0-9._%+-]+@cvsu\.edu\.ph$/;
+    if (!googleId) {
+      return res.status(400).json({ error: "Invalid Google ID token" });
+    }
 
-    if (emailRegex.test(email)) {
-      const existingUser = await User.findOne({ email });
+    const expirationTime = ticket.getPayload()?.exp;
 
-      if (existingUser && !existingUser.googleId) {
-        return res.status(409).json({
-          error: "Email already registered through traditional login",
-        });
-      }
+    // Check if the token has expired
+    if (expirationTime && expirationTime < Date.now() / 1000) {
+      return res.status(401).json({ error: "Google ID token has expired" });
+    }
 
-      // Check if user with the same Google ID exists
-      let user = await User.findOne({
-        googleId: sub,
+    // Check if user with the same Google ID exists
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Create a new user if not found
+      user = new User({
+        firstName,
+        lastName,
+        email,
+        googleId,
+        isEmailVerified: true,
       });
 
-      if (!user) {
-        // Create a new user if not found
-        user = new User({
-          firstName: firstName,
-          lastName: lastName,
-          email,
-          googleId: sub,
-          isEmailVerified: true,
-        });
-
-        await user.save();
-      }
-
-      if (user.isBanned) {
-        return res
-          .status(403)
-          .send({ message: "You are banned from the system" });
-      }
-
-      const updatedDevice = { deviceToken, fcmToken };
-
-      const deviceIndex = user.devices.findIndex(
-        (device) => device.deviceToken === deviceToken
-      );
-
-      if (deviceIndex === -1) {
-        // the device is new, so add it to the user's devices array
-        user.devices.push(updatedDevice);
-      } else {
-        // update the existing device's fcmToken
-        user.devices[deviceIndex].fcmToken = fcmToken;
-      }
-
       await user.save();
-
-      // Generate JWT token for authentication
-      const token = await user.generateGoogleAuthToken();
-
-      const userInfo = await User.findById(user._id)
-        .populate({
-          path: "ratingsAsTutor",
-          select: "subject value feedback tuteeId",
-          populate: {
-            path: "subject.subtopics.subtopicsRatings.tuteeId",
-            select: "firstName lastName avatar",
-          },
-        })
-        .populate({
-          path: "ratingsAsTutee",
-          select: "value feedback tutorId",
-          populate: {
-            path: "tutorId",
-            select: "firstName lastName avatar",
-          },
-        })
-        .exec();
-
-      return res.status(200).json({ user: userInfo, token });
-    } else {
-      return res.status(400).send("Invalid email address");
     }
+
+    if (user.isBanned) {
+      return res
+        .status(403)
+        .send({ message: "You are banned from the system" });
+    }
+
+    const updatedDevice = { deviceToken, fcmToken };
+
+    const deviceIndex = user.devices.findIndex(
+      (device) => device.deviceToken === deviceToken
+    );
+
+    if (deviceIndex === -1) {
+      // The device is new, so add it to the user's devices array
+      user.devices.push(updatedDevice);
+    } else {
+      // Update the existing device's fcmToken
+      user.devices[deviceIndex].fcmToken = fcmToken;
+    }
+
+    await user.save();
+
+    // Generate JWT token for authentication
+    const token = await user.generateGoogleAuthToken(expirationTime);
+
+    const userInfo = await User.findById(user._id)
+      .populate({
+        path: "ratingsAsTutor",
+        select: "subject value feedback tuteeId",
+        populate: {
+          path: "subject.subtopics.subtopicsRatings.tuteeId",
+          select: "firstName lastName avatar",
+        },
+      })
+      .populate({
+        path: "ratingsAsTutee",
+        select: "value feedback tutorId",
+        populate: {
+          path: "tutorId",
+          select: "firstName lastName avatar",
+        },
+      })
+      .exec();
+
+    return res.status(200).json({ user: userInfo, token });
   } catch (error) {
     console.error("Error verifying Google token:", error);
     res.status(401).json({ error: "Failed to verify Google token" });

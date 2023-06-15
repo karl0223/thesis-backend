@@ -20,7 +20,16 @@ const auth = async (req, res, next) => {
       return res.status(403).send({ error: "You are banned." });
     }
 
-    // check if the device token and FCM token headers are present in the request
+    // Check if the token is expired
+    const currentTimestamp = Date.now() / 1000;
+    if (decoded.exp && decoded.exp < currentTimestamp) {
+      throw new Error("Token expired");
+    }
+
+    console.log("expiration: ", decoded.exp);
+    console.log("current: ", Date.now() / 1000);
+
+    // Check if the device token and FCM token headers are present in the request
     const deviceToken = req.header("deviceToken");
     const fcmToken = req.header("fcmToken");
 
@@ -29,11 +38,11 @@ const auth = async (req, res, next) => {
         (device) => device.deviceToken === deviceToken
       );
       if (deviceIndex === -1) {
-        // add a new device object to the devices array
+        // Add a new device object to the devices array
         user.devices.push({ deviceToken, fcmToken });
         await user.save();
       } else {
-        // update the FCM token for the existing device object
+        // Update the FCM token for the existing device object
         user.devices[deviceIndex].fcmToken = fcmToken;
         await user.save();
       }
@@ -67,6 +76,12 @@ const socketAuth = async (socket, next) => {
 
     if (!user) {
       throw new Error();
+    }
+
+    // Check if the token is expired
+    const currentTimestamp = Date.now() / 1000;
+    if (decoded.exp && decoded.exp < currentTimestamp) {
+      throw new Error("Token expired");
     }
 
     socket.request.user = user;
