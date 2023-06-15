@@ -16,6 +16,8 @@ import indexRouter from "./routers/admin-routers/index.js";
 import analyticsRouter from "./routers/admin-routers/analytics.js";
 import tutorApplicationRouter from "./routers/admin-routers/tutorApplication.js";
 
+import morgan from "morgan";
+
 import {
   parseJSONHelper,
   tutorRequestPrint,
@@ -45,6 +47,8 @@ const partialsPath = path.join(__dirname, "templates", "partials");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use(morgan("dev"));
 
 app.set("view engine", "hbs");
 app.set("views", viewsPath);

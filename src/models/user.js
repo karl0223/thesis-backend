@@ -3,6 +3,12 @@ import validator from "validator";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+import HelpRequest from "./askHelp.js";
+import ChatRoom from "./chatRoom.js";
+import Message from "./messages.js";
+import TutorApplication from "./tutorApplication.js";
+import Report from "./report.js";
+
 const userSchema = new mongoose.Schema(
   {
     firstName: {
@@ -312,6 +318,81 @@ userSchema.pre("save", async function (next) {
     user.password = await bcrypt.hash(user.password, 8);
   }
   next();
+});
+
+// Pre-hook to delete associated data when the user is removed
+userSchema.pre("remove", async function (next) {
+  try {
+    // Find chat rooms where the user is the owner or a participant with pending or accepted status
+    const chatRooms = await ChatRoom.find({
+      $or: [
+        { owner: this._id },
+        {
+          participants: {
+            $elemMatch: {
+              userId: this._id,
+              status: { $in: ["pending", "accepted"] },
+            },
+          },
+        },
+      ],
+    });
+
+    // Iterate through each chat room and perform the appropriate action
+    for (const chatRoom of chatRooms) {
+      // Check if the user is the owner
+      if (chatRoom.owner.equals(this._id)) {
+        // Delete the entire chat room
+        await chatRoom.remove();
+      } else {
+        // Remove the user from the chat room as a participant
+        chatRoom.participants = chatRoom.participants.filter(
+          (participant) => !participant.userId.equals(this._id)
+        );
+        await chatRoom.save();
+      }
+    }
+
+    // Delete user's tutor applications
+    await TutorApplication.deleteMany({ userId: this._id });
+
+    // Delete reports involving the user
+    await Report.deleteMany({
+      $or: [{ reporter: this._id }, { reportedUser: this._id }],
+    });
+
+    // Delete Messages
+    await Message.deleteMany({ userId: this._id });
+
+    // Delete user's help requests
+    await HelpRequest.deleteMany({
+      $or: [{ tutorId: this._id }, { studentId: this._id }],
+    });
+
+    // Remove the user reference from ratingsAsTutor
+    await User.updateMany(
+      {},
+      {
+        $pull: {
+          "ratingsAsTutor.$[].subtopics.$[].subtopicsRatings": {
+            tuteeId: this._id,
+          },
+        },
+      },
+      { multi: true }
+    );
+
+    // Remove the user reference from ratingsAsTutee
+    await User.updateMany(
+      {},
+      { $pull: { ratingsAsTutee: { tutorId: this._id } } },
+      { multi: true }
+    );
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 const User = mongoose.model("User", userSchema);
