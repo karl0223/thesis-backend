@@ -374,19 +374,18 @@ userSchema.pre("remove", async function (next) {
       {},
       {
         $pull: {
-          "ratingsAsTutor.$[].subtopics.$[].subtopicsRatings": {
+          "ratingsAsTutor.$[].subject.subtopics.$[].subtopicsRatings": {
             tuteeId: this._id,
           },
         },
       },
-      { multi: true }
+      { arrayFilters: [{ "subtopics.subtopicsRatings.tuteeId": this._id }] }
     );
 
     // Remove the user reference from ratingsAsTutee
     await User.updateMany(
       {},
-      { $pull: { ratingsAsTutee: { tutorId: this._id } } },
-      { multi: true }
+      { $pull: { ratingsAsTutee: { tutorId: this._id } } }
     );
 
     next();

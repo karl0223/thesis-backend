@@ -1,6 +1,6 @@
 import express from "express";
 import User from "../models/user.js";
-import { auth } from "../middleware/auth.js";
+import { auth, authAdmin } from "../middleware/auth.js";
 import {
   signup,
   login,
@@ -14,6 +14,7 @@ import {
   updateUser,
   uploadProfilePicture,
   deleteUser,
+  deleteUserById,
 } from "../controllers/userControllers.js";
 
 import { verifyEmail } from "../utils/verifyEmail.js";
@@ -52,6 +53,8 @@ userRouter.patch("/api/users/me", auth, updateUser);
 
 // Delete user
 userRouter.delete("/api/users/delete", auth, deleteUser);
+
+userRouter.delete("/api/users/delete/:id", authAdmin, deleteUserById);
 
 // upload user avatar
 userRouter.post("/api/users/me/avatar", auth, uploadProfilePicture);
