@@ -15,42 +15,65 @@ const getAllTutors = async (req, res) => {
     isBanned: false,
   };
 
+  let totalTutors, totalPages;
+
   if (search) {
-    const sanitizedSearch = purify.sanitize(search);
-    const searchTermsArray = sanitizedSearch.split(/\s+/);
-    const searchTerms = await combinedSearchTerms(searchTermsArray);
+    const sanitizedSearch = purify.sanitize(search).toLowerCase();
+    const searchRegex = new RegExp(sanitizedSearch, "i");
 
-    termCounts(searchTerms);
+    termCounts([sanitizedSearch]);
 
-    const searchRegexes = searchTerms.map((term) => new RegExp(term, "i"));
+    console.log(searchRegex);
 
     query.$or = [
-      { firstName: { $in: searchRegexes } },
-      { lastName: { $in: searchRegexes } },
-      { "subjects.subjectCode": { $in: searchRegexes } },
-      { "subjects.description": { $in: searchRegexes } },
-      { "subjects.subtopics.name": { $in: searchRegexes } },
-      { "subjects.subtopics.description": { $in: searchRegexes } },
+      { firstName: searchRegex },
+      { lastName: searchRegex },
+      { "subjects.subjectCode": searchRegex },
+      { "subjects.description": searchRegex },
+      { "subjects.subtopics.name": searchRegex },
+      { "subjects.subtopics.description": searchRegex },
     ];
-  }
 
-  const totalTutors = await User.countDocuments(query);
-  const totalPages = Math.ceil(totalTutors / limit);
+    totalTutors = await User.countDocuments(query);
+    totalPages = Math.ceil(totalTutors / limit);
 
-  if (page > totalPages) {
-    return res.status(400).json({
-      message: "Page out of range",
-      tutors: [],
-      currentPage: page,
-      totalPages: 0,
-      totalTutors: 0,
-    });
+    if (page > totalPages) {
+      const searchTermsArray = sanitizedSearch.split(/\s+/);
+      const searchTerms = await combinedSearchTerms(searchTermsArray);
+
+      const searchRegexes = searchTerms.map((term) => new RegExp(term, "i"));
+
+      query.$or = [
+        { firstName: { $in: searchRegexes } },
+        { lastName: { $in: searchRegexes } },
+        { "subjects.subjectCode": { $in: searchRegexes } },
+        { "subjects.description": { $in: searchRegexes } },
+        { "subjects.subtopics.name": { $in: searchRegexes } },
+        { "subjects.subtopics.description": { $in: searchRegexes } },
+      ];
+
+      totalTutors = await User.countDocuments(query);
+      totalPages = Math.ceil(totalTutors / limit);
+
+      if (page > totalPages) {
+        return res.status(400).json({
+          message: "Page out of range",
+          tutors: [],
+          currentPage: page,
+          totalPages: 0,
+          totalTutors: 0,
+        });
+      }
+    }
   }
 
   let sortOption = {};
 
   if (!search) {
     sortOption = { averageRatingAsTutor: -1 }; // Sort by averageRatingAsTutor in descending order
+
+    totalTutors = await User.countDocuments(query);
+    totalPages = Math.ceil(totalTutors / limit);
   } else {
     sortOption = { "ratingsAsTutor.subject.averageSubjectsRating": -1 }; // Sort by subject's average rating in descending order
   }
