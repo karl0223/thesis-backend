@@ -23,8 +23,6 @@ const getAllTutors = async (req, res) => {
 
     termCounts([sanitizedSearch]);
 
-    console.log(searchRegex);
-
     query.$or = [
       { firstName: searchRegex },
       { lastName: searchRegex },
