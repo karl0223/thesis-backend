@@ -848,7 +848,7 @@ const sessionEnded = async (req, res) => {
         select: "userId",
         populate: {
           path: "userId",
-          select: "firstName lastName avatar",
+          select: "firstName lastName avatar devices",
         },
       })
       .exec();
@@ -863,6 +863,14 @@ const sessionEnded = async (req, res) => {
       }));
 
     await chatroom.save();
+
+    for (const participant of participantsToRate.participants) {
+      sendPushNotification(
+        participant.devices,
+        "Session Ended",
+        "The session has ended. Please rate your tutor."
+      );
+    }
 
     io.to(roomId).emit("session-ended", {
       message: "Session Ended",
