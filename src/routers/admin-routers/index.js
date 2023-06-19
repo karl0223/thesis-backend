@@ -14,7 +14,7 @@ indexRouter.get("/login", login);
 
 indexRouter.post("/login", loginFunction);
 
-indexRouter.get("/admin", webAuth, webAdminAuth, adminHome);
+// indexRouter.get("/admin", webAuth, webAdminAuth, adminHome);
 
 indexRouter.get("/admin/logout", webAuth, webAdminAuth, logout);
 

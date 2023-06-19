@@ -10,6 +10,23 @@ import {
 
 const analyticsRouter = express.Router();
 
+analyticsRouter.get("/admin", webAuth, webAdminAuth, async (req, res) => {
+  try {
+    const topSearches = await getTopSearches();
+    const { topTutor, topSubject } = await getMostSearchedTutorAndSubject();
+    const context = {
+      topSearches: JSON.stringify(topSearches),
+      topTutor,
+      topSubject,
+    };
+
+    res.render("analytics", context);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
+
 analyticsRouter.get(
   "/admin/analytics",
   webAuth,
