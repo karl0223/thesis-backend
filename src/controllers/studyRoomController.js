@@ -849,6 +849,10 @@ const sessionEnded = async (req, res) => {
         populate: {
           path: "userId",
           select: "firstName lastName avatar devices",
+          populate: {
+            path: "devices",
+            select: "fcmToken deviceToken",
+          },
         },
       })
       .exec();
@@ -866,7 +870,7 @@ const sessionEnded = async (req, res) => {
 
     for (const participant of participantsToRate.participants) {
       sendPushNotification(
-        participant.devices,
+        participant.userId.devices,
         "Session Ended",
         "The session has ended. Please rate your tutor."
       );
