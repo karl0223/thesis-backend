@@ -145,8 +145,9 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
-    socketId: {
-      type: String,
+    socketIds: {
+      type: Object,
+      default: {},
     },
     timeAndDateAvailability: {
       type: String,
