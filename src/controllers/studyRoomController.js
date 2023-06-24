@@ -8,6 +8,16 @@ import { normalizeText, termCounts } from "../utils/searchUtils.js";
 
 import sendPushNotification from "../utils/firebase-notification.js";
 
+import firebaseAdmin from "firebase-admin";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const serviceAccount = require("../../lft_secret_token.json");
+
+firebaseAdmin.initializeApp({
+  credential: firebaseAdmin.credential.cert(serviceAccount),
+  storageBucket: 'your_storage_bucket_url',
+});
+
 // Create a new chat room and add the owner as a participant
 const createChatRoom = async (req, res) => {
   try {
@@ -410,13 +420,18 @@ const getMessages = async (req, res) => {
 
 const sendMessage = async (req, res) => {
   try {
-    const { roomId, message } = req.body;
+    const { roomId, message, fileUrl } = req.body;
+
+    if (!message && !fileUrl) {
+      return res.status(400).json({ message: "Message cannot be empty" });
+    }
 
     // Save the message to the database
     var newMessage = await Message.create({
       roomId,
       userId: req.user._id,
       message,
+      fileUrl
     });
 
     // Emit a "message-sent" event to all users in the chat room to notify them of the new message
