@@ -101,8 +101,8 @@ const joinRoom = async (req, res) => {
         })
         .exec();
       if (owner) {
-        const ownerSocketId = await getUserSocket(owner._id);
-        if (ownerSocketId) {
+        const ownerSocketIds = await getUserSocket(owner._id);
+        if (ownerSocketIds) {
           io.to(roomId).emit("new-pending-participant", {
             roomId,
             user: newParticipant,
@@ -184,6 +184,15 @@ const leaveChatRoom = async (req, res) => {
 
       await ChatRoom.removeParticipant(roomId, userId);
       // Emit a "user-left" event to all users in the chat room to notify them of the user leaving
+
+      await sendMultipleEmits(io, user.socketIds, "user-left", {
+        user: {
+          userId: req.user._id,
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+        },
+        sessionEnded: chatRoom.sessionEnded,
+      });
 
       io.to(roomId).emit("user-left", {
         roomId,
@@ -587,9 +596,9 @@ const acceptUserRequest = async (req, res) => {
         .populate("userId", "firstName lastName");
 
       // Send a notification to the accepted participant
-      const socketId = await getUserSocket(userId);
-      if (socketId) {
-        io.to(socketId).emit("participant-accepted", {
+      const socketIds = await getUserSocket(userId);
+      if (socketIds) {
+        await sendMultipleEmits(io, socketIds, "participant-accepted", {
           messages: latestMessages,
           chatRoom,
           userId,
@@ -609,9 +618,11 @@ const acceptUserRequest = async (req, res) => {
       await ChatRoom.cancelParticipant(roomId, userId);
 
       // Send a notification to the rejected participant
-      const socketId = await getUserSocket(userId);
-      if (socketId) {
-        io.to(socketId).emit("participant-rejected", { chatRoom });
+      const socketIds = await getUserSocket(userId);
+      if (socketIds) {
+        await sendMultipleEmits(io, socketIds, "participant-rejected", {
+          chatRoom,
+        });
       }
       io.to(roomId).emit("user-left", {
         roomId,

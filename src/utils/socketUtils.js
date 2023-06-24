@@ -34,7 +34,7 @@ const getUserSocket = async (userId) => {
   }
 };
 
-const sendMultipleEmits = (socketIds, event, data) => {
+const sendMultipleEmits = async (io, socketIds, event, data) => {
   socketIds.forEach((socketId) => {
     io.to(socketId).emit(event, data);
   });

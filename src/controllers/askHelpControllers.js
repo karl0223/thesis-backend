@@ -1,7 +1,7 @@
 import HelpRequest from "../models/askHelp.js";
 import User from "../models/user.js";
 import ChatRoom from "../models/chatRoom.js";
-import { getUserSocket } from "../utils/socketUtils.js";
+import { getUserSocket, sendMultipleEmits } from "../utils/socketUtils.js";
 import sendPushNotification from "../utils/firebase-notification.js";
 
 const createRequest = async (req, res) => {
@@ -69,7 +69,7 @@ const createRequest = async (req, res) => {
         .send("You or the tutor still have an existing chatroom");
     }
 
-    const tutorSocket = await getUserSocket(tutorId);
+    const tutorSockets = await getUserSocket(tutorId);
 
     const newRequest = await HelpRequest.create({
       tutorId,
@@ -105,7 +105,7 @@ const createRequest = async (req, res) => {
       "You have a new help request!"
     );
 
-    io.to(tutorSocket).emit("new-request", requestInfo);
+    await sendMultipleEmits(io, tutorSockets, "new-request", requestInfo);
     res.send(requestInfo);
   } catch (err) {
     console.error(err);
@@ -156,7 +156,7 @@ const acceptRequest = async (req, res) => {
       .populate("tutorId", "firstName lastName")
       .populate("studentId", "firstName lastName");
 
-    const tuteeSocket = await getUserSocket(helpRequest.studentId._id);
+    const tuteeSockets = await getUserSocket(helpRequest.studentId._id);
 
     const existingChatRoom = await ChatRoom.findOne({
       $or: [
@@ -250,7 +250,7 @@ const acceptRequest = async (req, res) => {
         "firstName lastName"
       );
 
-      io.to(tuteeSocket).emit("request-accepted", {
+      await sendMultipleEmits(io, tuteeSockets, "request-accepted", {
         chatroom: updatedChatRoom,
         request: helpRequest,
       });
@@ -263,7 +263,12 @@ const acceptRequest = async (req, res) => {
 
       res.send({ chatroom: updatedChatRoom, request: helpRequest });
     } else {
-      io.to(tuteeSocket).emit("request-rejected", helpRequest);
+      await sendMultipleEmits(
+        io,
+        tuteeSockets,
+        "request-rejected",
+        helpRequest
+      );
 
       const tutee = await User.findById(helpRequest.studentId._id);
 

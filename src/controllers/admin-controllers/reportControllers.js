@@ -3,7 +3,7 @@ import User from "../../models/user.js";
 import ChatRoom from "../../models/chatRoom.js";
 import HelpRequest from "../../models/askHelp.js";
 import { getReportsAnalytics } from "./analyticsControllers.js";
-import { getUserSocket } from "../../utils/socketUtils.js";
+import { getUserSocket, sendMultipleEmits } from "../../utils/socketUtils.js";
 
 const getAllReports = async (req, res) => {
   try {
@@ -38,8 +38,9 @@ const reportUser = async (req, res) => {
     });
     await report.save();
 
-    const reportedUserSocket = await getUserSocket(reportedUser);
-    io.to(reportedUserSocket).emit("new-report", report);
+    const reportedUserSockets = await getUserSocket(reportedUser);
+
+    await sendMultipleEmits(io, reportedUserSockets, "new-report", report);
 
     res.status(201).json(report);
   } catch (err) {
@@ -81,8 +82,8 @@ const updateReport = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const reporterSocket = await getUserSocket(report.reporter._id);
-    const reportedUserSocket = await getUserSocket(report.reportedUser._id);
+    const reporterSockets = await getUserSocket(report.reporter._id);
+    const reportedUserSockets = await getUserSocket(report.reportedUser._id);
 
     if (status === "resolved") {
       await User.findByIdAndUpdate(
@@ -164,8 +165,8 @@ const updateReport = async (req, res) => {
       }
     }
 
-    io.to(reporterSocket).emit("report-result", report);
-    io.to(reportedUserSocket).emit("report-result", report);
+    await sendMultipleEmits(io, reporterSockets, "report-result", report);
+    await sendMultipleEmits(io, reportedUserSockets, "report-result", report);
 
     return res.status(200).json(report);
   } catch (err) {

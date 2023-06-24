@@ -1,6 +1,6 @@
 import TutorApplication from "../../models/tutorApplication.js";
 import User from "../../models/user.js";
-import { getUserSocket } from "../../utils/socketUtils.js";
+import { getUserSocket, sendMultipleEmits } from "../../utils/socketUtils.js";
 import { separateData, filterSubjectData } from "../../utils/gradesData.js";
 import { ocrSpace } from "ocr-space-api-wrapper";
 import sendPushNotification from "../../utils/firebase-notification.js";
@@ -185,9 +185,14 @@ const rejectTutorApplication = async (req, res) => {
       return res.status(404).send("Tutor application not found");
     }
 
-    var userSocket = await getUserSocket(tutorApplication.userId);
-    if (userSocket) {
-      io.emit("tutor-application-rejected", tutorApplication);
+    const userSockets = await getUserSocket(tutorApplication.userId);
+    if (userSockets) {
+      await sendMultipleEmits(
+        io,
+        userSockets,
+        "tutor-application-rejected",
+        tutorApplication
+      );
     }
 
     tutorApplication.remove();
@@ -249,9 +254,14 @@ const approveTutorApplication = async (req, res) => {
     await tutorApplication.save();
     await updateRole.save();
 
-    var userSocket = await getUserSocket(tutorApplication.userId);
-    if (userSocket) {
-      io.emit("tutor-application-approved", tutorApplication);
+    const userSockets = await getUserSocket(tutorApplication.userId);
+    if (userSockets) {
+      await sendMultipleEmits(
+        io,
+        userSockets,
+        "tutor-application-approved",
+        tutorApplication
+      );
     }
 
     const user = await User.findById(tutorApplication.userId);
