@@ -2,21 +2,11 @@ import ChatRoom from "../models/chatRoom.js";
 import User from "../models/user.js";
 import Message from "../models/messages.js";
 import purify from "../utils/domPurify.js";
-import { getUserSocket } from "../utils/socketUtils.js";
+import { getUserSocket, sendMultipleEmits } from "../utils/socketUtils.js";
 import { inviteUser, acceptInvitation } from "../utils/chatRoomUtils.js";
 import { normalizeText, termCounts } from "../utils/searchUtils.js";
 
 import sendPushNotification from "../utils/firebase-notification.js";
-
-import firebaseAdmin from "firebase-admin";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const serviceAccount = require("../../lft_secret_token.json");
-
-firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(serviceAccount),
-  storageBucket: 'your_storage_bucket_url',
-});
 
 // Create a new chat room and add the owner as a participant
 const createChatRoom = async (req, res) => {
@@ -431,7 +421,7 @@ const sendMessage = async (req, res) => {
       roomId,
       userId: req.user._id,
       message,
-      fileUrl
+      fileUrl,
     });
 
     // Emit a "message-sent" event to all users in the chat room to notify them of the new message

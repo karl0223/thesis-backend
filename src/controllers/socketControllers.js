@@ -95,7 +95,7 @@ function socketController(io) {
     socket.on("disconnect", async () => {
       const userId = socket.request.user._id;
       console.log(`Socket ${socket.id} disconnected for user ${userId}`);
-      await deleteUserSocket(userId);
+      await deleteUserSocket(userId, socket.id);
     });
   });
 }

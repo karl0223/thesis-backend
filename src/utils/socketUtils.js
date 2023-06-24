@@ -4,7 +4,7 @@ const updateUserSocket = async (userId, socketId) => {
   try {
     await User.updateOne(
       { _id: userId },
-      { $set: { [`socketIds.${userId}`]: socketId } },
+      { $push: { socketIds: socketId } },
       { upsert: true }
     );
   } catch (error) {
@@ -12,11 +12,12 @@ const updateUserSocket = async (userId, socketId) => {
   }
 };
 
-const deleteUserSocket = async (userId) => {
+const deleteUserSocket = async (userId, socketId) => {
   try {
     await User.updateOne(
       { _id: userId },
-      { $unset: { [`socketIds.${userId}`]: 1 } }
+      { $pull: { socketIds: socketId } },
+      { upsert: true }
     );
   } catch (error) {
     console.error(error);
@@ -26,11 +27,17 @@ const deleteUserSocket = async (userId) => {
 const getUserSocket = async (userId) => {
   try {
     const user = await User.findOne({ _id: userId });
-    return user ? user.socketIds[userId] : null;
+    return user ? user.socketIds : [];
   } catch (error) {
     console.error(error);
-    return null;
+    return [];
   }
 };
 
-export { updateUserSocket, deleteUserSocket, getUserSocket };
+const sendMultipleEmits = (socketIds, event, data) => {
+  socketIds.forEach((socketId) => {
+    io.to(socketId).emit(event, data);
+  });
+};
+
+export { updateUserSocket, deleteUserSocket, getUserSocket, sendMultipleEmits };
