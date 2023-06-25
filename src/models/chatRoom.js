@@ -17,6 +17,21 @@ const participantSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const taskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  done: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 const chatRoomSchema = new mongoose.Schema({
   owner: {
     type: mongoose.Schema.Types.ObjectId,
@@ -72,6 +87,10 @@ const chatRoomSchema = new mongoose.Schema({
         },
       },
     ],
+  },
+  todoList: {
+    type: [taskSchema],
+    default: [],
   },
   deletedAt: {
     type: Date,
