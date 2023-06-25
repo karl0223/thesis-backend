@@ -19,10 +19,14 @@ const deleteUserSocket = async (userId, socketId) => {
 const getUserSocket = async (userId) => {
   try {
     const user = await User.findOne({ _id: userId });
-    return user ? user.socketIds[0] : [];
+    return user
+      ? user.socketIds && user.socketIds.length > 0
+        ? user.socketIds[0]
+        : null
+      : null;
   } catch (error) {
     console.error(error);
-    return [];
+    return null;
   }
 };
 
