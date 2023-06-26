@@ -61,6 +61,8 @@ const getTodoList = async (req, res) => {
 
 const updateTodo = async (req, res) => {
   const { todoId, roomId, title, description, done } = req.body;
+  const io = req.app.get("io");
+
   try {
     const chatRoom = await ChatRoom.findById(roomId);
 
@@ -104,6 +106,8 @@ const updateTodo = async (req, res) => {
 
 const deleteTodo = async (req, res) => {
   const { todoId, roomId } = req.body;
+  const io = req.app.get("io");
+
   try {
     const chatRoom = await ChatRoom.findById(roomId);
 
