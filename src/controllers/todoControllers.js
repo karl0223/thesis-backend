@@ -2,6 +2,8 @@ import ChatRoom from "../models/chatRoom.js";
 
 const createTodoList = async (req, res) => {
   const { title, description, roomId } = req.body;
+  const io = req.app.get("io");
+
   try {
     const todo = {
       title,
@@ -27,6 +29,8 @@ const createTodoList = async (req, res) => {
     chatRoom.todoList.push(todo);
 
     await chatRoom.save();
+
+    io.to(roomId).emit("create-todo", todo);
 
     res.status(201).send(todo);
   } catch (err) {
@@ -89,6 +93,8 @@ const updateTodo = async (req, res) => {
 
     await chatRoom.save();
 
+    io.to(roomId).emit("update-todo", updateTodo);
+
     res.status(200).send(updatedTodo);
   } catch (err) {
     console.error(err);
@@ -121,6 +127,8 @@ const deleteTodo = async (req, res) => {
     chatRoom.todoList.splice(todoIndex, 1);
 
     await chatRoom.save();
+
+    io.to(roomId).emit("delete-todo", todoId);
 
     res.status(200).send("Todo deleted");
   } catch (err) {
