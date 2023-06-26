@@ -95,7 +95,7 @@ const updateTodo = async (req, res) => {
 
     await chatRoom.save();
 
-    io.to(roomId).emit("update-todo", updateTodo);
+    io.to(roomId).emit("update-todo", updatedTodo);
 
     res.status(200).send(updatedTodo);
   } catch (err) {
