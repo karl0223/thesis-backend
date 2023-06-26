@@ -30,7 +30,13 @@ const createTodoList = async (req, res) => {
 
     await chatRoom.save();
 
-    io.to(roomId).emit("create-todo", todo);
+    const newTodo = chatRoom.todoList.find(
+      (todoItem) => todoItem.title === title
+    );
+
+    io.to(roomId).emit("create-todo", newTodo);
+
+    res.status(201).send(newTodo);
 
     res.status(201).send(todo);
   } catch (err) {
