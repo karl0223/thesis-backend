@@ -9,7 +9,7 @@ import {
 
 const todoRouter = express.Router();
 
-todoRouter.get("/api/todo", auth, getTodoList);
+todoRouter.get("/api/todo/:roomId", auth, getTodoList);
 
 todoRouter.post("/api/todo/create", auth, createTodoList);
 

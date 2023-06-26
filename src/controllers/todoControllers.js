@@ -36,7 +36,7 @@ const createTodoList = async (req, res) => {
 };
 
 const getTodoList = async (req, res) => {
-  const { roomId } = req.body;
+  const { roomId } = req.params;
   try {
     const chatRoom = await ChatRoom.findById(roomId);
 
