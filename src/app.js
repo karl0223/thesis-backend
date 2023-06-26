@@ -15,6 +15,7 @@ import helpRequestRouter from "./routers/askHelp.js";
 import indexRouter from "./routers/admin-routers/index.js";
 import analyticsRouter from "./routers/admin-routers/analytics.js";
 import tutorApplicationRouter from "./routers/admin-routers/tutorApplication.js";
+import todoRouter from "./routers/todo.js";
 
 import morgan from "morgan";
 
@@ -75,5 +76,6 @@ app.use(indexRouter);
 app.use(analyticsRouter);
 app.use(tutorApplicationRouter);
 app.use(reportRouter);
+app.use(todoRouter);
 
 export default server;

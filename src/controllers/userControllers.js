@@ -59,6 +59,8 @@ const login = async (req, res) => {
       user.devices[deviceIndex].fcmToken = fcmToken;
     }
 
+    user.tokens = [];
+
     await user.save();
 
     const token = await user.generateAuthToken();
@@ -162,6 +164,8 @@ const signInWithGoogle = async (req, res) => {
         // update the existing device's fcmToken
         user.devices[deviceIndex].fcmToken = fcmToken;
       }
+
+      user.tokens = [];
 
       await user.save();
 
