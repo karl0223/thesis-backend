@@ -37,8 +37,6 @@ const createTodoList = async (req, res) => {
     io.to(roomId).emit("create-todo", newTodo);
 
     res.status(201).send(newTodo);
-
-    res.status(201).send(todo);
   } catch (err) {
     console.error(err);
     res.status(500).send("Failed to create todo list");
